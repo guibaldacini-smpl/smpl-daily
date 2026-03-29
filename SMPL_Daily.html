@@ -6,24 +6,27 @@
 <title>SMPL · Daily</title>
 
 <!-- ── Firebase SDK ── -->
+  
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // ── Cole aqui a sua config do Firebase ──────────────────────────────────
+  // Your web app's Firebase configuration
   const firebaseConfig = {
-    apiKey:            "COLE_AQUI",
-    authDomain:        "COLE_AQUI",
-    databaseURL:       "COLE_AQUI",
-    projectId:         "COLE_AQUI",
-    storageBucket:     "COLE_AQUI",
-    messagingSenderId: "COLE_AQUI",
-    appId:             "COLE_AQUI"
+    apiKey: "AIzaSyB5c9Hp8mNaiXmsj1U-IoKlq8zKems-aRE",
+    authDomain: "smpl-daily-9ee0a.firebaseapp.com",
+    databaseURL: "https://smpl-daily-9ee0a-default-rtdb.firebaseio.com",
+    projectId: "smpl-daily-9ee0a",
+    storageBucket: "smpl-daily-9ee0a.firebasestorage.app",
+    messagingSenderId: "691667380690",
+    appId: "1:691667380690:web:299ab3fcc3d0715547400b"
   };
-  // ────────────────────────────────────────────────────────────────────────
 
-  const CONFIGURED = firebaseConfig.apiKey !== "COLE_AQUI";
-
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
   if (CONFIGURED) {
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
