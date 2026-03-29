@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMPL · Daily</title>
 
+<!-- ── SheetJS (Excel export) ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <!-- ── Firebase SDK ── -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -117,6 +120,10 @@
   }
   .btn-save { background: white; color: var(--black); }
   .btn-save:hover { background: #eee; }
+  .btn-excel { background: #1D6F42; color: white; }
+  .btn-excel:hover { background: #155232; }
+  .btn-pdf { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.35); }
+  .btn-pdf:hover { background: rgba(255,255,255,0.1); }
   .btn-print { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.35); }
   .btn-print:hover { background: rgba(255,255,255,0.1); }
   .btn-clear { background: transparent; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.15); font-size: 11px; }
@@ -457,7 +464,8 @@
     <span id="syncStatus" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
     <span class="saved-badge" id="savedBadge">✓ Salvo</span>
     <button class="btn btn-save" onclick="saveAll()">💾 Salvar</button>
-    <button class="btn btn-print" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn btn-excel" onclick="exportExcel()">📊 Excel</button>
+    <button class="btn btn-pdf" onclick="exportPDF()">📄 PDF</button>
     <button class="btn btn-clear" onclick="clearDay()">↺ Novo dia</button>
   </div>
 </header>
@@ -980,6 +988,76 @@ window.addEventListener('load', () => {
     el.textContent = '🔴 Modo local (Firebase não configurado)';
   }
 });
+
+// ── Export PDF ────────────────────────────────────────────────────────────
+function exportPDF() {
+  window.print();
+}
+
+// ── Export Excel ──────────────────────────────────────────────────────────
+function exportExcel() {
+  const data = collectData();
+  const wb = XLSX.utils.book_new();
+  const dateStr = data.date || todayKey();
+
+  // ── Aba 1: Prioridades & Notas ──
+  const resumoRows = [
+    ['SMPL · Daily — ' + dateStr],
+    [],
+    ['PRIORIDADES DO DIA'],
+    ...(data.priority || '').split('\n').filter(l => l.trim()).map(l => ['• ' + l]),
+    [],
+    ['NOTAS & DECISÕES'],
+    [data.notes || ''],
+  ];
+  const wsResumo = XLSX.utils.aoa_to_sheet(resumoRows);
+  wsResumo['!cols'] = [{ wch: 80 }];
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+
+  // ── Aba 2: Projetos ──
+  const projHeader = [['Canal', 'Projeto', 'Responsável', 'Status', 'Próximo Passo']];
+  const projRows = (data.projects || [])
+    .filter(p => p.canal || p.projeto || p.owner || p.next)
+    .map(p => [p.canal, p.projeto, p.owner, p.status, p.next]);
+  const wsProj = XLSX.utils.aoa_to_sheet([...projHeader, ...projRows]);
+  wsProj['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 16 }, { wch: 12 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, wsProj, 'Projetos');
+
+  // ── Aba 3: Plano de Ação ──
+  const actionHeader = [['#', 'Ação', 'Responsável', 'Prazo', 'Status']];
+  const actionRows = (data.actions || [])
+    .filter(a => a.action)
+    .map((a, i) => [i + 1, a.action, a.owner, a.due, a.status]);
+  const wsAction = XLSX.utils.aoa_to_sheet([...actionHeader, ...actionRows]);
+  wsAction['!cols'] = [{ wch: 4 }, { wch: 40 }, { wch: 16 }, { wch: 10 }, { wch: 18 }];
+  XLSX.utils.book_append_sheet(wb, wsAction, 'Plano de Ação');
+
+  // ── Aba 4: OKRs ──
+  const okrHeader = [['Objetivo / KR', 'Meta', 'Atual', 'Progresso %']];
+  const okrRows = (data.okrs || [])
+    .filter(o => o.obj)
+    .map(o => [o.obj, o.target, o.current, (o.pct || 0) + '%']);
+  const wsOKR = XLSX.utils.aoa_to_sheet([...okrHeader, ...okrRows]);
+  wsOKR['!cols'] = [{ wch: 35 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsOKR, 'OKRs');
+
+  // ── Aba 5: Recap por Pessoa ──
+  const recapRows = [['Pessoa', 'Papel', 'Concluído Ontem', 'Foco Hoje', 'Red Flags']];
+  PEOPLE.forEach(p => {
+    const pd = data.people?.[p.key];
+    if (!pd) return;
+    const done  = (pd.done  || []).filter(t => t.text).map(t => (t.checked ? '✅ ' : '○ ') + t.text).join('\n');
+    const today = (pd.today || []).filter(t => t.text).map(t => (t.checked ? '✅ ' : '○ ') + t.text).join('\n');
+    recapRows.push([p.name, p.role, done, today, pd.flag || '']);
+  });
+  const wsRecap = XLSX.utils.aoa_to_sheet(recapRows);
+  wsRecap['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 35 }, { wch: 35 }, { wch: 30 }];
+  XLSX.utils.book_append_sheet(wb, wsRecap, 'Recap');
+
+  // ── Download ──
+  const filename = `SMPL_Daily_${dateStr}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────
 buildProjects();
