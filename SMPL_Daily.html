@@ -31,21 +31,26 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // Chave do dia atual — cada dia tem seu próprio registro
+    // Chave do dia atual
     function dayKey() {
       return "daily_" + new Date().toISOString().slice(0, 10).replace(/-/g, "_");
     }
 
+    // Chave da semana (segunda-feira da semana corrente)
+    function weekKey() {
+      const d = new Date();
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const mon = new Date(d); mon.setDate(diff);
+      return "week_" + mon.toISOString().slice(0, 10).replace(/-/g, "_");
+    }
+
     // Expõe funções para o código principal
     window.__firebase = {
-      save: (data) => {
-        set(ref(db, dayKey()), data).catch(e => console.warn("Firebase save error", e));
-      },
-      listen: (callback) => {
-        onValue(ref(db, dayKey()), snap => {
-          if (snap.exists()) callback(snap.val());
-        });
-      }
+      save:       (data) => set(ref(db, dayKey()),  data).catch(e => console.warn("Firebase save error", e)),
+      listen:     (cb)   => onValue(ref(db, dayKey()),  snap => { if (snap.exists()) cb(snap.val()); }),
+      saveWeek:   (data) => set(ref(db, weekKey()), data).catch(e => console.warn("Firebase week save error", e)),
+      listenWeek: (cb)   => onValue(ref(db, weekKey()), snap => { if (snap.exists()) cb(snap.val()); }),
     };
 
     console.log("✅ Firebase conectado — sync em tempo real ativo");
@@ -444,6 +449,82 @@
   /* ── Section spacing ── */
   .section-block { margin-bottom: 32px; }
 
+  /* ── Objetivos da Semana ── */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .week-pillar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .week-pillar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--mid);
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--border);
+  }
+  .week-pillar textarea {
+    width: 100%;
+    min-height: 90px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--black);
+    resize: vertical;
+    background: var(--bg);
+    transition: border 0.15s;
+  }
+  .week-pillar textarea:focus { outline: none; border-color: var(--black); background: white; }
+  .week-pillar-readonly {
+    min-height: 90px;
+    font-size: 13px;
+    color: var(--dark);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+  }
+  .week-pillar-readonly.empty { color: var(--light); font-style: italic; }
+  .week-badge {
+    font-size: 11px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 12px;
+    padding: 3px 10px;
+    color: rgba(255,255,255,0.8);
+  }
+  .week-save-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .btn-week-save {
+    background: var(--dark);
+    color: white;
+    padding: 7px 18px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+  }
+  .btn-week-save:hover { background: #444; }
+  .week-saved-note { font-size: 11px; color: var(--done); opacity: 0; transition: opacity 0.4s; font-weight: 600; }
+  .week-saved-note.show { opacity: 1; }
+
   /* ── Print ── */
   @media print {
     body { background: white; }
@@ -471,6 +552,21 @@
 </header>
 
 <div class="container">
+
+  <!-- ── 0. Objetivos da Semana ── -->
+  <div class="section-block" id="weekBlock">
+    <div class="section-header" id="weekSectionHeader">
+      📅 Objetivos da Semana
+      <span class="week-badge" id="weekBadge" style="margin-left:auto"></span>
+    </div>
+    <div class="card" id="weekCard">
+      <div class="week-grid" id="weekGrid"></div>
+      <div class="week-save-row" id="weekSaveRow" style="display:none">
+        <span class="week-saved-note" id="weekSavedNote">✓ Objetivos salvos</span>
+        <button class="btn-week-save" onclick="saveWeekObjectives()">💾 Salvar objetivos da semana</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── 1. Prioridade SMPL ── -->
   <div class="section-block">
@@ -989,6 +1085,103 @@ window.addEventListener('load', () => {
   }
 });
 
+// ── Objetivos da Semana ───────────────────────────────────────────────────
+const WEEK_PILLARS = [
+  { key: 'gestao',       label: 'Gestão / Projetos' },
+  { key: 'comercial',    label: 'Comercial' },
+  { key: 'atendimento',  label: 'Atendimento' },
+  { key: 'planejamento', label: 'Planejamento' },
+  { key: 'conteudo',     label: 'Conteúdo' },
+];
+const WEEK_STORAGE_KEY = 'smpl_week_v1';
+
+function isMonday() {
+  return new Date().getDay() === 1;
+}
+
+function currentWeekLabel() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d); mon.setDate(diff);
+  const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  const fmt = (dt) => dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return fmt(mon) + ' – ' + fmt(fri);
+}
+
+function buildWeekSection() {
+  const grid    = document.getElementById('weekGrid');
+  const saveRow = document.getElementById('weekSaveRow');
+  const badge   = document.getElementById('weekBadge');
+  const monday  = isMonday();
+
+  badge.textContent = currentWeekLabel();
+
+  grid.innerHTML = '';
+  WEEK_PILLARS.forEach(p => {
+    const col = document.createElement('div');
+    col.className = 'week-pillar';
+    if (monday) {
+      col.innerHTML = `
+        <div class="week-pillar-label">${p.label}</div>
+        <textarea id="wobj_${p.key}" placeholder="Objetivo para esta semana…"></textarea>
+      `;
+    } else {
+      col.innerHTML = `
+        <div class="week-pillar-label">${p.label}</div>
+        <div class="week-pillar-readonly empty" id="wobj_${p.key}">Sem objetivo definido</div>
+      `;
+    }
+    grid.appendChild(col);
+  });
+
+  if (monday) saveRow.style.display = 'flex';
+}
+
+function collectWeekData() {
+  const obj = {};
+  WEEK_PILLARS.forEach(p => {
+    const el = document.getElementById(`wobj_${p.key}`);
+    obj[p.key] = el ? el.value : '';
+  });
+  return obj;
+}
+
+function applyWeekData(data) {
+  const monday = isMonday();
+  WEEK_PILLARS.forEach(p => {
+    const el  = document.getElementById(`wobj_${p.key}`);
+    if (!el) return;
+    const val = data[p.key] || '';
+    if (monday) {
+      el.value = val;
+    } else {
+      el.textContent = val || 'Sem objetivo definido';
+      el.classList.toggle('empty', !val);
+    }
+  });
+}
+
+function saveWeekObjectives() {
+  const data = collectWeekData();
+  localStorage.setItem(WEEK_STORAGE_KEY, JSON.stringify(data));
+  if (window.__firebase && window.__firebase.saveWeek) {
+    window.__firebase.saveWeek(data);
+  }
+  const note = document.getElementById('weekSavedNote');
+  note.classList.add('show');
+  setTimeout(() => note.classList.remove('show'), 2500);
+}
+
+function loadWeekData() {
+  if (window.__firebase && window.__firebase.listenWeek) {
+    window.__firebase.listenWeek(data => applyWeekData(data));
+    return;
+  }
+  const raw = localStorage.getItem(WEEK_STORAGE_KEY);
+  if (raw) { try { applyWeekData(JSON.parse(raw)); } catch(e) {} }
+}
+
 // ── Export PDF ────────────────────────────────────────────────────────────
 function exportPDF() {
   window.print();
@@ -999,6 +1192,18 @@ function exportExcel() {
   const data = collectData();
   const wb = XLSX.utils.book_new();
   const dateStr = data.date || todayKey();
+
+  // ── Aba 0: Objetivos da Semana ──
+  const weekData = JSON.parse(localStorage.getItem(WEEK_STORAGE_KEY) || '{}');
+  const weekRows = [
+    ['OBJETIVOS DA SEMANA — ' + currentWeekLabel()],
+    [],
+    ['Pilar', 'Objetivo'],
+    ...WEEK_PILLARS.map(p => [p.label, weekData[p.key] || '']),
+  ];
+  const wsWeek = XLSX.utils.aoa_to_sheet(weekRows);
+  wsWeek['!cols'] = [{ wch: 20 }, { wch: 60 }];
+  XLSX.utils.book_append_sheet(wb, wsWeek, 'Semana');
 
   // ── Aba 1: Prioridades & Notas ──
   const resumoRows = [
@@ -1060,11 +1265,13 @@ function exportExcel() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
+buildWeekSection();
 buildProjects();
 buildPeople();
 buildActions();
 buildOKRs();
 addBullet(); // start with one empty bullet
+loadWeekData();
 loadData();
 </script>
 </body>
