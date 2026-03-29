@@ -1095,9 +1095,6 @@ const WEEK_PILLARS = [
 ];
 const WEEK_STORAGE_KEY = 'smpl_week_v1';
 
-function isMonday() {
-  return new Date().getDay() === 1;
-}
 
 function currentWeekLabel() {
   const d = new Date();
@@ -1113,7 +1110,6 @@ function buildWeekSection() {
   const grid    = document.getElementById('weekGrid');
   const saveRow = document.getElementById('weekSaveRow');
   const badge   = document.getElementById('weekBadge');
-  const monday  = isMonday();
 
   badge.textContent = currentWeekLabel();
 
@@ -1121,21 +1117,14 @@ function buildWeekSection() {
   WEEK_PILLARS.forEach(p => {
     const col = document.createElement('div');
     col.className = 'week-pillar';
-    if (monday) {
-      col.innerHTML = `
-        <div class="week-pillar-label">${p.label}</div>
-        <textarea id="wobj_${p.key}" placeholder="Objetivo para esta semana…"></textarea>
-      `;
-    } else {
-      col.innerHTML = `
-        <div class="week-pillar-label">${p.label}</div>
-        <div class="week-pillar-readonly empty" id="wobj_${p.key}">Sem objetivo definido</div>
-      `;
-    }
+    col.innerHTML = `
+      <div class="week-pillar-label">${p.label}</div>
+      <textarea id="wobj_${p.key}" placeholder="Objetivo para esta semana…"></textarea>
+    `;
     grid.appendChild(col);
   });
 
-  if (monday) saveRow.style.display = 'flex';
+  saveRow.style.display = 'flex';
 }
 
 function collectWeekData() {
@@ -1148,17 +1137,10 @@ function collectWeekData() {
 }
 
 function applyWeekData(data) {
-  const monday = isMonday();
   WEEK_PILLARS.forEach(p => {
-    const el  = document.getElementById(`wobj_${p.key}`);
+    const el = document.getElementById(`wobj_${p.key}`);
     if (!el) return;
-    const val = data[p.key] || '';
-    if (monday) {
-      el.value = val;
-    } else {
-      el.textContent = val || 'Sem objetivo definido';
-      el.classList.toggle('empty', !val);
-    }
+    el.value = data[p.key] || '';
   });
 }
 
