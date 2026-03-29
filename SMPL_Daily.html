@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMPL · Daily</title>
+
+<!-- ── Firebase SDK ── -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ── Cole aqui a sua config do Firebase ──────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "COLE_AQUI",
+    authDomain:        "COLE_AQUI",
+    databaseURL:       "COLE_AQUI",
+    projectId:         "COLE_AQUI",
+    storageBucket:     "COLE_AQUI",
+    messagingSenderId: "COLE_AQUI",
+    appId:             "COLE_AQUI"
+  };
+  // ────────────────────────────────────────────────────────────────────────
+
+  const CONFIGURED = firebaseConfig.apiKey !== "COLE_AQUI";
+
+  if (CONFIGURED) {
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // Chave do dia atual — cada dia tem seu próprio registro
+    function dayKey() {
+      return "daily_" + new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+    }
+
+    // Expõe funções para o código principal
+    window.__firebase = {
+      save: (data) => {
+        set(ref(db, dayKey()), data).catch(e => console.warn("Firebase save error", e));
+      },
+      listen: (callback) => {
+        onValue(ref(db, dayKey()), snap => {
+          if (snap.exists()) callback(snap.val());
+        });
+      }
+    };
+
+    console.log("✅ Firebase conectado — sync em tempo real ativo");
+  } else {
+    // Sem config: usa localStorage como fallback
+    window.__firebase = null;
+    console.warn("⚠️ Firebase não configurado — usando localStorage local");
+  }
+</script>
+<style>
+  :root {
+    --black: #111111;
+    --dark: #222222;
+    --mid: #555555;
+    --light: #888888;
+    --border: #E0E0E0;
+    --bg: #F7F7F7;
+    --white: #FFFFFF;
+    --red: #C62828;
+    --red-bg: #FFF5F5;
+    --red-border: #FFCDD2;
+    --green: #1B5E20;
+    --green-light: #E8F5E9;
+    --purple: #4A148C;
+    --purple-light: #F3E5F5;
+    --yellow: #F57F17;
+    --yellow-light: #FFFDE7;
+    --done: #2E7D32;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--black);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    background: var(--black);
+    color: white;
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .site-header h1 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .date-badge {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+  }
+  .btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .btn-save { background: white; color: var(--black); }
+  .btn-save:hover { background: #eee; }
+  .btn-print { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.35); }
+  .btn-print:hover { background: rgba(255,255,255,0.1); }
+  .btn-clear { background: transparent; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.15); font-size: 11px; }
+  .btn-clear:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── Section Headers ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--dark);
+    color: white;
+    padding: 11px 18px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .section-header.green { background: var(--green); }
+  .section-header.purple { background: var(--purple); }
+  .section-header.red { background: var(--red); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Priority Block ── */
+  .priority-bullet-list {
+    width: 100%;
+    min-height: 80px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--black);
+    font-family: inherit;
+    background: var(--bg);
+    transition: border 0.15s;
+    list-style: disc;
+    list-style-position: inside;
+  }
+  .priority-bullet-list:focus-within { border-color: var(--black); background: white; }
+  .priority-bullet-item {
+    display: list-item;
+    list-style: disc inside;
+    padding: 2px 0;
+  }
+  .priority-bullet-item input {
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--black);
+    width: calc(100% - 20px);
+  }
+  .priority-bullet-item input:focus { outline: none; }
+  .priority-bullet-item input::placeholder { color: #bbb; }
+
+  /* ── Projects Table ── */
+  .section-note {
+    font-size: 11px;
+    color: var(--light);
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+  .projects-table { width: 100%; border-collapse: collapse; }
+  .projects-table th {
+    background: var(--dark);
+    color: white;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .projects-table th:first-child { border-radius: 6px 0 0 0; }
+  .projects-table th:last-child { border-radius: 0 6px 0 0; }
+  .projects-table td {
+    padding: 0;
+    border: 1px solid var(--border);
+  }
+  .projects-table tr:nth-child(even) td { background: var(--bg); }
+  .projects-table tr:hover td { background: #F0F0F0; }
+  .projects-table td input, .projects-table td select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--black);
+  }
+  .projects-table td input:focus, .projects-table td select:focus {
+    outline: none;
+    background: #FFFDE7;
+  }
+  .status-select { cursor: pointer; }
+  .status-🟢 { color: #2E7D32; font-weight: 600; }
+  .status-🟡 { color: #F57F17; font-weight: 600; }
+  .status-🔴 { color: #C62828; font-weight: 600; }
+
+  /* ── Person Cards ── */
+  .people-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .people-grid { grid-template-columns: 1fr; } }
+
+  .person-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .person-card-header {
+    background: var(--dark);
+    color: white;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .person-name { font-size: 14px; font-weight: 700; }
+  .person-role { font-size: 11px; color: rgba(255,255,255,0.6); }
+  .person-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--mid);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+  }
+  .field-label.red { color: var(--red); }
+
+  .task-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .task-item input[type="checkbox"] {
+    margin-top: 2px;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: var(--done);
+  }
+  .task-item input[type="text"] {
+    flex: 1;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    padding: 2px 4px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--black);
+    background: transparent;
+  }
+  .task-item input[type="text"]:focus { outline: none; border-bottom-color: var(--black); }
+  .task-item.done input[type="text"] { text-decoration: line-through; color: var(--light); }
+
+  .add-task-btn {
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--light);
+    cursor: pointer;
+    align-self: flex-start;
+    margin-top: 2px;
+    transition: all 0.15s;
+  }
+  .add-task-btn:hover { border-color: var(--mid); color: var(--mid); }
+
+  .flag-area {
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .flag-area textarea {
+    width: 100%;
+    min-height: 50px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--red);
+    resize: vertical;
+  }
+  .flag-area textarea:focus { outline: none; }
+  .flag-area textarea::placeholder { color: #FFAAAA; }
+
+  /* ── Action Plan ── */
+  .action-table { width: 100%; border-collapse: collapse; }
+  .action-table th {
+    background: var(--green);
+    color: white;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .action-table th:first-child { border-radius: 6px 0 0 0; width: 30px; }
+  .action-table th:last-child { border-radius: 0 6px 0 0; }
+  .action-table td { padding: 0; border: 1px solid var(--border); }
+  .action-table tr:nth-child(even) td { background: var(--green-light); }
+  .action-table td input, .action-table td select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--black);
+  }
+  .action-table td input:focus, .action-table td select:focus {
+    outline: none;
+    background: #FFFDE7;
+  }
+  .action-num {
+    text-align: center;
+    font-size: 12px;
+    color: var(--light);
+    font-weight: 600;
+    padding: 9px 12px;
+    width: 36px;
+  }
+
+  /* ── OKRs ── */
+  .okr-table { width: 100%; border-collapse: collapse; }
+  .okr-table th {
+    background: var(--purple);
+    color: white;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .okr-table th:first-child { border-radius: 6px 0 0 0; }
+  .okr-table th:last-child { border-radius: 0 6px 0 0; }
+  .okr-table td { padding: 0; border: 1px solid var(--border); }
+  .okr-table tr:nth-child(even) td { background: var(--purple-light); }
+  .okr-table td input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--black);
+  }
+  .okr-table td input:focus { outline: none; background: #FFFDE7; }
+  .progress-cell { padding: 8px 12px !important; }
+  .progress-bar-bg {
+    background: #E0D0F0;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .progress-bar-fill {
+    background: var(--purple);
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s;
+  }
+  .progress-label { font-size: 11px; color: var(--purple); font-weight: 600; margin-top: 3px; }
+
+  /* ── Notes ── */
+  .notes-area {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .notes-area textarea {
+    width: 100%;
+    min-height: 120px;
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--black);
+    resize: vertical;
+    background: var(--bg);
+  }
+  .notes-area textarea:focus { outline: none; border-color: var(--mid); background: white; }
+
+  /* ── Saved indicator ── */
+  .saved-badge {
+    font-size: 11px;
+    color: var(--done);
+    opacity: 0;
+    transition: opacity 0.4s;
+    font-weight: 600;
+  }
+  .saved-badge.show { opacity: 1; }
+
+  /* ── Section spacing ── */
+  .section-block { margin-bottom: 32px; }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white; }
+    .site-header { position: relative; }
+    .btn, .add-task-btn { display: none; }
+    .person-card, .card, .notes-area { break-inside: avoid; }
+    .people-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="site-header">
+  <h1>SMPL · DAILY</h1>
+  <div class="header-right">
+    <span class="date-badge" id="dateBadge"></span>
+    <span id="syncStatus" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
+    <span class="saved-badge" id="savedBadge">✓ Salvo</span>
+    <button class="btn btn-save" onclick="saveAll()">💾 Salvar</button>
+    <button class="btn btn-print" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn btn-clear" onclick="clearDay()">↺ Novo dia</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── 1. Prioridade SMPL ── -->
+  <div class="section-block">
+    <div class="section-header">🏢 Prioridade SMPL do Dia</div>
+    <div class="card priority-block">
+      <div class="field-label">Qual é o foco macro da empresa hoje? O que NÃO pode ficar para amanhã?</div>
+      <br>
+      <ul class="priority-bullet-list" id="priorityList"></ul>
+    </div>
+  </div>
+
+  <!-- ── 2. Projetos ── -->
+  <div class="section-block">
+    <div class="section-header">📌 Projetos em Destaque</div>
+    <div class="card">
+      <div class="section-note">🟢 On track &nbsp;|&nbsp; 🟡 Atenção &nbsp;|&nbsp; 🔴 Crítico &nbsp;— Preencher antes da daily</div>
+      <table class="projects-table" id="projectsTable">
+        <thead>
+          <tr>
+            <th style="width:16%">Canal</th>
+            <th style="width:18%">Projeto</th>
+            <th style="width:15%">Responsável</th>
+            <th style="width:11%">Status</th>
+            <th style="width:40%">Próximo passo</th>
+          </tr>
+        </thead>
+        <tbody id="projectsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 3. Recap por pessoa ── -->
+  <div class="section-block">
+    <div class="section-header">👥 Recap por Pessoa</div>
+    <div class="section-note" style="margin-bottom:16px">✏️ Preencher antes da daily &nbsp;|&nbsp; 🔴 Red flags ao vivo durante a reunião</div>
+    <div class="people-grid" id="peopleGrid"></div>
+  </div>
+
+  <!-- ── 4. Plano de ação ── -->
+  <div class="section-block">
+    <div class="section-header green">⚡ Plano de Ação do Dia</div>
+    <div class="card">
+      <div class="section-note">Preenchido ao vivo · decisões tomadas na daily</div>
+      <table class="action-table" id="actionTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="width:36%">Ação</th>
+            <th style="width:18%">Responsável</th>
+            <th style="width:14%">Prazo</th>
+            <th style="width:22%">Status</th>
+          </tr>
+        </thead>
+        <tbody id="actionBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 5. OKRs ── -->
+  <div class="section-block">
+    <div class="section-header purple">🏆 OKRs & Metas</div>
+    <div class="card">
+      <div class="section-note">Acompanhamento quinzenal · clique na barra para ajustar o progresso</div>
+      <table class="okr-table" id="okrTable">
+        <thead>
+          <tr>
+            <th style="width:32%">Objetivo / KR</th>
+            <th style="width:18%">Meta</th>
+            <th style="width:18%">Atual</th>
+            <th style="width:32%">Progresso</th>
+          </tr>
+        </thead>
+        <tbody id="okrBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 6. Notas ── -->
+  <div class="section-block">
+    <div class="section-header">📝 Notas & Decisões da Reunião</div>
+    <div class="notes-area">
+      <textarea id="notes" placeholder="Decisões tomadas, alinhamentos importantes, próximos passos macro…"></textarea>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────
+const PEOPLE = [
+  { key: 'gui',    name: 'Gui',    role: 'Parcerias & Relacionamento' },
+  { key: 'felipe', name: 'Felipe', role: 'Processos & Escala' },
+  { key: 'andre',  name: 'André',  role: 'Automação & Dados' },
+  { key: 'sophia', name: 'Sophia', role: 'Estratégia & Conteúdo' },
+  { key: 'rafa',   name: 'Rafa',   role: 'Dados & Reports' },
+  { key: 'felippe',name: 'Felippe',role: 'Expansão Comercial' },
+];
+
+const PROJECTS_ROWS = 6;
+const ACTION_ROWS   = 8;
+const OKR_ROWS      = 6;
+const STORAGE_KEY   = 'smpl_daily_v2';
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function today() {
+  const d = new Date();
+  return d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+function todayKey() {
+  return new Date().toISOString().slice(0,10);
+}
+
+// ── Date badge ────────────────────────────────────────────────────────────
+document.getElementById('dateBadge').textContent = today().replace(/^\w/, c => c.toUpperCase());
+
+// ── Dropdown options ──────────────────────────────────────────────────────
+const CANAIS = ['Aqueles Caras','Kings League','Canal Foco','Cocielo','Porta dos Fundos','Outro'];
+const PROJETOS = ['Always on','Copa do Mundo','Commerce','Projeto especial'];
+const RESPONSAVEIS = ['Guilherme','Felipe','Feliphe','Felippe','Rafael','André','Sophia','Bruna','Ana'];
+
+function makeSelect(options, col, i, allowCustom = false) {
+  const opts = options.map(o => `<option value="${o}">${o}</option>`).join('');
+  const customOpt = allowCustom ? `<option value="__custom__">✏️ Outro…</option>` : '';
+  return `
+    <select data-proj="${i}" data-col="${col}" onchange="handleCustomSelect(this)">
+      <option value="">—</option>
+      ${opts}
+      ${customOpt}
+    </select>
+  `;
+}
+
+function handleCustomSelect(sel) {
+  if (sel.value !== '__custom__') return;
+  const custom = prompt('Digite o valor:');
+  if (custom) {
+    const opt = document.createElement('option');
+    opt.value = custom; opt.textContent = custom; opt.selected = true;
+    sel.insertBefore(opt, sel.lastElementChild);
+    sel.value = custom;
+  } else {
+    sel.value = '';
+  }
+}
+
+// ── Build Projects Table ──────────────────────────────────────────────────
+function buildProjects() {
+  const tbody = document.getElementById('projectsBody');
+  tbody.innerHTML = '';
+  for (let i = 0; i < PROJECTS_ROWS; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${makeSelect(CANAIS, 'canal', i)}</td>
+      <td>${makeSelect(PROJETOS, 'projeto', i, true)}</td>
+      <td>${makeSelect(RESPONSAVEIS, 'owner', i)}</td>
+      <td>
+        <select class="status-select" data-proj="${i}" data-col="status">
+          <option value="">—</option>
+          <option value="🟢">🟢 On track</option>
+          <option value="🟡">🟡 Atenção</option>
+          <option value="🔴">🔴 Crítico</option>
+        </select>
+      </td>
+      <td><input type="text" placeholder="Próximo passo…" data-proj="${i}" data-col="next"></td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ── Build Person Cards ────────────────────────────────────────────────────
+function buildPeople() {
+  const grid = document.getElementById('peopleGrid');
+  grid.innerHTML = '';
+  PEOPLE.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'person-card';
+    card.innerHTML = `
+      <div class="person-card-header">
+        <div>
+          <div class="person-name">${p.name}</div>
+          <div class="person-role">${p.role}</div>
+        </div>
+      </div>
+      <div class="person-body">
+        <div>
+          <div class="field-label">✅ Concluído ontem</div>
+          <ul class="task-list" id="done_${p.key}"></ul>
+          <button class="add-task-btn" onclick="addTask('done_${p.key}')">+ tarefa</button>
+        </div>
+        <div>
+          <div class="field-label">🎯 Foco de hoje</div>
+          <ul class="task-list" id="today_${p.key}"></ul>
+          <button class="add-task-btn" onclick="addTask('today_${p.key}')">+ tarefa</button>
+        </div>
+        <div>
+          <div class="field-label red">🚩 Red Flags / Bloqueios</div>
+          <div class="flag-area">
+            <textarea id="flag_${p.key}" placeholder="Riscos, dependências, travamentos…" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+    addTask(`done_${p.key}`);
+    addTask(`today_${p.key}`);
+  });
+}
+
+// ── Task items ────────────────────────────────────────────────────────────
+function addTask(listId, value = '', checked = false) {
+  const ul = document.getElementById(listId);
+  const li = document.createElement('li');
+  li.className = 'task-item' + (checked ? ' done' : '');
+  li.innerHTML = `
+    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleDone(this)">
+    <input type="text" value="${escHtml(value)}" placeholder="Tarefa…" onkeydown="taskKeydown(event, this)">
+    <button onclick="removeTask(this)" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0" title="Remover">×</button>
+  `;
+  ul.appendChild(li);
+}
+function toggleDone(cb) {
+  cb.parentElement.classList.toggle('done', cb.checked);
+}
+function removeTask(btn) {
+  btn.closest('li').remove();
+}
+function taskKeydown(e, input) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const ul = input.closest('ul');
+    addTask(ul.id);
+    ul.querySelector('li:last-child input[type="text"]').focus();
+  }
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Build Action Table ────────────────────────────────────────────────────
+function buildActions() {
+  const tbody = document.getElementById('actionBody');
+  tbody.innerHTML = '';
+  for (let i = 0; i < ACTION_ROWS; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="action-num">${i+1}</td>
+      <td><input type="text" placeholder="Descreva a ação…" data-action="${i}" data-col="action"></td>
+      <td><input type="text" placeholder="Quem?" data-action="${i}" data-col="owner"></td>
+      <td><input type="text" placeholder="dd/mm" data-action="${i}" data-col="due"></td>
+      <td>
+        <select data-action="${i}" data-col="status">
+          <option value="">—</option>
+          <option value="⏳ Pendente">⏳ Pendente</option>
+          <option value="🔄 Em andamento">🔄 Em andamento</option>
+          <option value="✅ Feito">✅ Feito</option>
+          <option value="🚫 Bloqueado">🚫 Bloqueado</option>
+        </select>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ── Build OKR Table ───────────────────────────────────────────────────────
+function buildOKRs() {
+  const tbody = document.getElementById('okrBody');
+  tbody.innerHTML = '';
+  for (let i = 0; i < OKR_ROWS; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" placeholder="Ex: Receita mensal, Novos contratos…" data-okr="${i}" data-col="obj"></td>
+      <td><input type="text" placeholder="Ex: R$500k" data-okr="${i}" data-col="target"></td>
+      <td><input type="text" placeholder="Ex: R$320k" data-okr="${i}" data-col="current" oninput="updateProgress(${i})"></td>
+      <td class="progress-cell">
+        <div class="progress-bar-bg" onclick="clickProgress(event, ${i})" title="Clique para ajustar">
+          <div class="progress-bar-fill" id="progBar_${i}" style="width:0%"></div>
+        </div>
+        <div class="progress-label" id="progLabel_${i}">0%</div>
+        <input type="hidden" id="progVal_${i}" data-okr="${i}" data-col="pct" value="0">
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function updateProgress(i) {
+  const cur = document.querySelector(`[data-okr="${i}"][data-col="current"]`).value;
+  const tgt = document.querySelector(`[data-okr="${i}"][data-col="target"]`).value;
+  const curN = parseFloat(cur.replace(/[^\d.]/g,''));
+  const tgtN = parseFloat(tgt.replace(/[^\d.]/g,''));
+  if (!isNaN(curN) && !isNaN(tgtN) && tgtN > 0) {
+    const pct = Math.min(100, Math.round(curN/tgtN*100));
+    setProgress(i, pct);
+  }
+}
+
+function clickProgress(e, i) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = Math.round((e.clientX - rect.left) / rect.width * 100);
+  setProgress(i, Math.max(0, Math.min(100, pct)));
+}
+
+function setProgress(i, pct) {
+  document.getElementById(`progBar_${i}`).style.width = pct + '%';
+  document.getElementById(`progLabel_${i}`).textContent = pct + '%';
+  document.getElementById(`progVal_${i}`).value = pct;
+}
+
+// ── Save / Load ───────────────────────────────────────────────────────────
+function collectData() {
+  const data = { date: todayKey(), priority: '', projects: [], people: {}, actions: [], okrs: [], notes: '' };
+
+  data.priority = collectBullets();
+  data.notes    = document.getElementById('notes').value;
+
+  // Projects
+  for (let i = 0; i < PROJECTS_ROWS; i++) {
+    data.projects.push({
+      canal:   document.querySelector(`[data-proj="${i}"][data-col="canal"]`)?.value || '',
+      projeto: document.querySelector(`[data-proj="${i}"][data-col="projeto"]`)?.value || '',
+      owner:   document.querySelector(`[data-proj="${i}"][data-col="owner"]`)?.value || '',
+      status:  document.querySelector(`[data-proj="${i}"][data-col="status"]`)?.value || '',
+      next:    document.querySelector(`[data-proj="${i}"][data-col="next"]`)?.value || '',
+    });
+  }
+
+  // People
+  PEOPLE.forEach(p => {
+    const doneTasks  = collectTasks(`done_${p.key}`);
+    const todayTasks = collectTasks(`today_${p.key}`);
+    const flag       = document.getElementById(`flag_${p.key}`)?.value || '';
+    data.people[p.key] = { done: doneTasks, today: todayTasks, flag };
+  });
+
+  // Actions
+  for (let i = 0; i < ACTION_ROWS; i++) {
+    data.actions.push({
+      action: document.querySelector(`[data-action="${i}"][data-col="action"]`)?.value || '',
+      owner:  document.querySelector(`[data-action="${i}"][data-col="owner"]`)?.value || '',
+      due:    document.querySelector(`[data-action="${i}"][data-col="due"]`)?.value || '',
+      status: document.querySelector(`[data-action="${i}"][data-col="status"]`)?.value || '',
+    });
+  }
+
+  // OKRs
+  for (let i = 0; i < OKR_ROWS; i++) {
+    data.okrs.push({
+      obj:     document.querySelector(`[data-okr="${i}"][data-col="obj"]`)?.value || '',
+      target:  document.querySelector(`[data-okr="${i}"][data-col="target"]`)?.value || '',
+      current: document.querySelector(`[data-okr="${i}"][data-col="current"]`)?.value || '',
+      pct:     parseInt(document.getElementById(`progVal_${i}`)?.value || '0'),
+    });
+  }
+
+  return data;
+}
+
+function collectTasks(listId) {
+  const ul = document.getElementById(listId);
+  if (!ul) return [];
+  return Array.from(ul.querySelectorAll('li')).map(li => ({
+    text:    li.querySelector('input[type="text"]').value,
+    checked: li.querySelector('input[type="checkbox"]').checked,
+  }));
+}
+
+function showSaved(msg = '✓ Salvo') {
+  const badge = document.getElementById('savedBadge');
+  badge.textContent = msg;
+  badge.classList.add('show');
+  setTimeout(() => badge.classList.remove('show'), 2500);
+}
+
+function saveAll() {
+  const data = collectData();
+  // Salva sempre em localStorage como backup local
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  // Salva no Firebase se configurado
+  if (window.__firebase) {
+    window.__firebase.save(data);
+    showSaved('☁️ Sincronizado');
+  } else {
+    showSaved('✓ Salvo');
+  }
+}
+
+function loadData() {
+  // Se Firebase configurado, escuta mudanças em tempo real
+  if (window.__firebase) {
+    window.__firebase.listen(data => applyData(data));
+    return;
+  }
+  // Fallback: localStorage
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try { applyData(JSON.parse(raw)); } catch(e) { console.warn('Load error', e); }
+}
+
+function applyData(data) {
+    if (data.priority) restoreBullets(data.priority);
+    if (data.notes)    document.getElementById('notes').value = data.notes;
+
+    // Projects
+    (data.projects || []).forEach((p, i) => {
+      const el = (col) => document.querySelector(`[data-proj="${i}"][data-col="${col}"]`);
+      const setVal = (col, val) => {
+        const e = el(col); if (!e || !val) return;
+        // if value not in options, add it
+        const exists = Array.from(e.options).some(o => o.value === val);
+        if (!exists) { const o = document.createElement('option'); o.value = val; o.textContent = val; e.insertBefore(o, e.lastElementChild); }
+        e.value = val;
+      };
+      setVal('canal',   p.canal   || p.name || '');
+      setVal('projeto', p.projeto || '');
+      setVal('owner',   p.owner   || '');
+      setVal('status',  p.status  || '');
+      if (el('next')) el('next').value = p.next || '';
+    });
+
+    // People
+    PEOPLE.forEach(p => {
+      const pd = data.people?.[p.key];
+      if (!pd) return;
+      restoreTasks(`done_${p.key}`,  pd.done  || []);
+      restoreTasks(`today_${p.key}`, pd.today || []);
+      const flagEl = document.getElementById(`flag_${p.key}`);
+      if (flagEl) flagEl.value = pd.flag || '';
+    });
+
+    // Actions
+    (data.actions || []).forEach((a, i) => {
+      const el = (col) => document.querySelector(`[data-action="${i}"][data-col="${col}"]`);
+      if (el('action')) el('action').value = a.action || '';
+      if (el('owner'))  el('owner').value  = a.owner  || '';
+      if (el('due'))    el('due').value    = a.due    || '';
+      if (el('status')) el('status').value = a.status || '';
+    });
+
+    // OKRs
+    (data.okrs || []).forEach((o, i) => {
+      const el = (col) => document.querySelector(`[data-okr="${i}"][data-col="${col}"]`);
+      if (el('obj'))     el('obj').value     = o.obj     || '';
+      if (el('target'))  el('target').value  = o.target  || '';
+      if (el('current')) el('current').value = o.current || '';
+      setProgress(i, o.pct || 0);
+    });
+}
+
+function restoreTasks(listId, tasks) {
+  const ul = document.getElementById(listId);
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (tasks.length === 0) { addTask(listId); return; }
+  tasks.forEach(t => addTask(listId, t.text, t.checked));
+}
+
+function clearDay() {
+  if (!confirm('Limpar todos os campos para um novo dia?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ── Priority bullet list ──────────────────────────────────────────────────
+function addBullet(value = '', focus = false) {
+  const ul = document.getElementById('priorityList');
+  const li = document.createElement('li');
+  li.className = 'priority-bullet-item';
+  li.innerHTML = `<input type="text" value="${escHtml(value)}" placeholder="Adicione uma prioridade…">`;
+  const input = li.querySelector('input');
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addBullet('', true);
+    } else if (e.key === 'Backspace' && input.value === '') {
+      const prev = li.previousElementSibling;
+      li.remove();
+      if (prev) prev.querySelector('input').focus();
+    }
+  });
+  ul.appendChild(li);
+  if (focus) input.focus();
+}
+
+function collectBullets() {
+  return Array.from(document.querySelectorAll('#priorityList .priority-bullet-item input'))
+    .map(i => i.value).filter(v => v.trim() !== '').join('\n');
+}
+
+function restoreBullets(text) {
+  const ul = document.getElementById('priorityList');
+  ul.innerHTML = '';
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length === 0) { addBullet(); return; }
+  lines.forEach(l => addBullet(l));
+}
+
+// ── Auto-save on input ────────────────────────────────────────────────────
+let autoSaveTimer;
+document.addEventListener('input', () => {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveAll, 1500);
+});
+document.addEventListener('change', () => {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveAll, 500);
+});
+
+// ── Sync status indicator ─────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const el = document.getElementById('syncStatus');
+  if (window.__firebase) {
+    el.textContent = '🟢 Sync em tempo real';
+    el.style.color = 'rgba(100,255,100,0.7)';
+  } else {
+    el.textContent = '🔴 Modo local (Firebase não configurado)';
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+buildProjects();
+buildPeople();
+buildActions();
+buildOKRs();
+addBullet(); // start with one empty bullet
+loadData();
+</script>
+</body>
+</html>
