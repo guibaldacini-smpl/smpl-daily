@@ -11,7 +11,7 @@
 <!-- ── Firebase SDK ── -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   // ── Cole aqui a sua config do Firebase ──────────────────────────────────
   const firebaseConfig = {
@@ -47,9 +47,30 @@
 
     // Expõe funções para o código principal
     window.__firebase = {
-      save:       (data) => set(ref(db, dayKey()),  data).catch(e => console.warn("Firebase save error", e)),
+      // Escritas por campo (multi-path update) — evita sobrescrever dados de outros usuários
+      save: (data) => {
+        const day = dayKey();
+        const updates = {
+          [`${day}/date`]:     data.date,
+          [`${day}/priority`]: data.priority,
+          [`${day}/notes`]:    data.notes,
+          [`${day}/projects`]: data.projects,
+          [`${day}/actions`]:  data.actions,
+          [`${day}/okrs`]:     data.okrs,
+        };
+        // Cada pessoa salva só o seu próprio campo — sem conflito
+        Object.entries(data.people || {}).forEach(([key, val]) => {
+          updates[`${day}/people/${key}`] = val;
+        });
+        return update(ref(db), updates).catch(e => console.warn("Firebase save error", e));
+      },
       listen:     (cb)   => onValue(ref(db, dayKey()),  snap => { if (snap.exists()) cb(snap.val()); }),
-      saveWeek:   (data) => set(ref(db, weekKey()), data).catch(e => console.warn("Firebase week save error", e)),
+      saveWeek:   (data) => {
+        const wk = weekKey();
+        const updates = {};
+        Object.entries(data).forEach(([key, val]) => { updates[`${wk}/${key}`] = val; });
+        return update(ref(db), updates).catch(e => console.warn("Firebase week save error", e));
+      },
       listenWeek: (cb)   => onValue(ref(db, weekKey()), snap => { if (snap.exists()) cb(snap.val()); }),
     };
 
