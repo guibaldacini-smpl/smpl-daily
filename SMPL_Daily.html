@@ -1076,6 +1076,7 @@ document.addEventListener('change', () => {
 
 // ── Sync status indicator ─────────────────────────────────────────────────
 window.addEventListener('load', () => {
+  // Sync status indicator
   const el = document.getElementById('syncStatus');
   if (window.__firebase) {
     el.textContent = '🟢 Sync em tempo real';
@@ -1083,6 +1084,9 @@ window.addEventListener('load', () => {
   } else {
     el.textContent = '🔴 Modo local (Firebase não configurado)';
   }
+  // Carrega dados APÓS Firebase estar pronto
+  loadWeekData();
+  loadData();
 });
 
 // ── Objetivos da Semana ───────────────────────────────────────────────────
@@ -1253,8 +1257,7 @@ buildPeople();
 buildActions();
 buildOKRs();
 addBullet(); // start with one empty bullet
-loadWeekData();
-loadData();
+// loadData e loadWeekData são chamados no evento 'load' (após Firebase inicializar)
 </script>
 </body>
 </html>
