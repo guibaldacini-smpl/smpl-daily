@@ -64,7 +64,22 @@
         });
         return update(ref(db), updates).catch(e => console.warn("Firebase save error", e));
       },
-      listen:     (cb)   => onValue(ref(db, dayKey()),  snap => { if (snap.exists()) cb(snap.val()); }),
+      // Escuta hoje; se não houver dados chama onEmpty UMA vez (sem race condition)
+      listenOrCarryover: (onData, onEmpty) => {
+        let emptyHandled = false;
+        onValue(ref(db, dayKey()), snap => {
+          if (snap.exists()) {
+            onData(snap.val());
+          } else if (!emptyHandled) {
+            emptyHandled = true;
+            onEmpty();
+          }
+        });
+      },
+      getYesterday: () => {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return get(ref(db, "daily_" + d.toISOString().slice(0,10).replace(/-/g,"_")));
+      },
       saveWeek:   (data) => {
         const wk = weekKey();
         const updates = {};
@@ -72,7 +87,6 @@
         return update(ref(db), updates).catch(e => console.warn("Firebase week save error", e));
       },
       listenWeek: (cb)   => onValue(ref(db, weekKey()), snap => { if (snap.exists()) cb(snap.val()); }),
-      readOnce:   (key)  => get(ref(db, key)),
     };
 
     console.log("✅ Firebase conectado — sync em tempo real ativo");
@@ -1031,26 +1045,15 @@ function saveAll() {
   }
 }
 
-function firebaseDayKey(date) {
-  const d = date || new Date();
-  return "daily_" + d.toISOString().slice(0, 10).replace(/-/g, "_");
-}
-
 function loadData() {
   if (window.__firebase) {
-    const todayFbKey = firebaseDayKey();
-    // Verifica se já existe dado de hoje
-    window.__firebase.readOnce(todayFbKey).then(snap => {
-      if (!snap.exists()) {
-        // Sem dado hoje → carrega do dia anterior
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        window.__firebase.readOnce(firebaseDayKey(yesterday)).then(ySnap => {
-          if (ySnap.exists()) applyCarryover(ySnap.val());
-        });
-      }
-    });
-    // Escuta mudanças em tempo real (sempre)
-    window.__firebase.listen(data => applyData(data));
+    // listenOrCarryover garante que hoje e ontem nunca são lidos ao mesmo tempo
+    window.__firebase.listenOrCarryover(
+      data => applyData(data),   // hoje tem dados → aplica normalmente
+      () => window.__firebase.getYesterday().then(snap => {
+        if (snap.exists()) applyCarryover(snap.val()); // sem dados hoje → replica ontem
+      })
+    );
     return;
   }
   // Fallback: localStorage
