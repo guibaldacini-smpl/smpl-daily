@@ -11,7 +11,7 @@
 <!-- ── Firebase SDK ── -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, update, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   // ── Cole aqui a sua config do Firebase ──────────────────────────────────
   const firebaseConfig = {
@@ -72,6 +72,7 @@
         return update(ref(db), updates).catch(e => console.warn("Firebase week save error", e));
       },
       listenWeek: (cb)   => onValue(ref(db, weekKey()), snap => { if (snap.exists()) cb(snap.val()); }),
+      readOnce:   (key)  => get(ref(db, key)),
     };
 
     console.log("✅ Firebase conectado — sync em tempo real ativo");
@@ -548,11 +549,67 @@
 
   /* ── Print ── */
   @media print {
-    body { background: white; }
-    .site-header { position: relative; }
-    .btn, .add-task-btn { display: none; }
-    .person-card, .card, .notes-area { break-inside: avoid; }
-    .people-grid { grid-template-columns: 1fr 1fr; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: white; font-size: 11px; padding: 0; }
+    .site-header { position: relative; padding: 10px 20px; }
+    .site-header h1 { font-size: 15px; }
+    .container { padding: 12px; }
+
+    /* Esconde elementos de interação */
+    .btn, .btn-week-save, .add-task-btn, #syncStatus,
+    .week-save-row, .add-task-btn { display: none !important; }
+
+    /* Inputs e selects viram texto */
+    input[type="text"], select, textarea {
+      border: none !important;
+      background: transparent !important;
+      padding: 2px 0 !important;
+      font-size: 10px !important;
+      height: auto !important;
+      min-height: unset !important;
+      overflow: visible !important;
+      white-space: normal !important;
+      word-break: break-word !important;
+      resize: none !important;
+    }
+    textarea { min-height: 30px !important; }
+
+    /* Tabelas */
+    .projects-table, .action-table, .okr-table {
+      font-size: 10px;
+      table-layout: fixed;
+      width: 100%;
+    }
+    .projects-table td, .projects-table th,
+    .action-table td, .action-table th,
+    .okr-table td, .okr-table th {
+      overflow: visible !important;
+      white-space: normal !important;
+      word-break: break-word !important;
+      padding: 5px 6px !important;
+      height: auto !important;
+    }
+
+    /* Cards e seções */
+    .card, .notes-area, .week-pillar { break-inside: avoid; }
+    .section-block { margin-bottom: 14px; }
+    .person-card { break-inside: avoid; page-break-inside: avoid; }
+    .people-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .person-body { gap: 6px; }
+
+    /* Semana */
+    .week-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .week-pillar textarea {
+      min-height: 50px !important;
+      font-size: 10px !important;
+    }
+
+    /* Task lists */
+    .task-list { font-size: 10px; }
+    .task-item input[type="text"] { font-size: 10px !important; }
+
+    /* Quebra de página antes de seções grandes */
+    .section-block:nth-child(4) { page-break-before: always; }
   }
 </style>
 </head>
@@ -974,16 +1031,90 @@ function saveAll() {
   }
 }
 
+function firebaseDayKey(date) {
+  const d = date || new Date();
+  return "daily_" + d.toISOString().slice(0, 10).replace(/-/g, "_");
+}
+
 function loadData() {
-  // Se Firebase configurado, escuta mudanças em tempo real
   if (window.__firebase) {
+    const todayFbKey = firebaseDayKey();
+    // Verifica se já existe dado de hoje
+    window.__firebase.readOnce(todayFbKey).then(snap => {
+      if (!snap.exists()) {
+        // Sem dado hoje → carrega do dia anterior
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        window.__firebase.readOnce(firebaseDayKey(yesterday)).then(ySnap => {
+          if (ySnap.exists()) applyCarryover(ySnap.val());
+        });
+      }
+    });
+    // Escuta mudanças em tempo real (sempre)
     window.__firebase.listen(data => applyData(data));
     return;
   }
   // Fallback: localStorage
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
-  try { applyData(JSON.parse(raw)); } catch(e) { console.warn('Load error', e); }
+  try {
+    const stored = JSON.parse(raw);
+    if (stored.date === todayKey()) {
+      applyData(stored);       // Mesmo dia → carrega normalmente
+    } else {
+      applyCarryover(stored);  // Dia diferente → replica para hoje
+    }
+  } catch(e) { console.warn('Load error', e); }
+}
+
+// ── Replica dados do dia anterior ────────────────────────────────────────
+function applyCarryover(data) {
+  // Projetos: replica tudo
+  (data.projects || []).forEach((p, i) => {
+    const setVal = (col, val) => {
+      const e = document.querySelector(`[data-proj="${i}"][data-col="${col}"]`);
+      if (!e || !val) return;
+      if (e.tagName === 'SELECT') {
+        const exists = Array.from(e.options).some(o => o.value === val);
+        if (!exists) { const o = document.createElement('option'); o.value = val; o.textContent = val; e.insertBefore(o, e.lastElementChild); }
+        e.value = val;
+      } else { e.value = val; }
+    };
+    setVal('canal',  p.canal);   setVal('projeto', p.projeto);
+    setVal('owner',  p.owner);   setVal('status',  p.status);
+    const nextEl = document.querySelector(`[data-proj="${i}"][data-col="next"]`);
+    if (nextEl) nextEl.value = p.next || '';
+  });
+
+  // Pessoas: foco de ontem → concluído ontem; red flags mantêm
+  PEOPLE.forEach(p => {
+    const pd = data.people?.[p.key];
+    if (!pd) return;
+    restoreTasks(`done_${p.key}`,  pd.today || []);  // ontem's foco = hoje's done
+    restoreTasks(`today_${p.key}`, pd.today || []);  // pré-preenche foco de hoje
+    const flagEl = document.getElementById(`flag_${p.key}`);
+    if (flagEl) flagEl.value = pd.flag || '';
+  });
+
+  // Ações: replica apenas as não concluídas
+  let idx = 0;
+  (data.actions || []).filter(a => a.action && a.status !== '✅ Feito').forEach(a => {
+    if (idx >= ACTION_ROWS) return;
+    const el = col => document.querySelector(`[data-action="${idx}"][data-col="${col}"]`);
+    if (el('action')) el('action').value = a.action;
+    if (el('owner'))  el('owner').value  = a.owner;
+    if (el('due'))    el('due').value    = a.due;
+    if (el('status')) el('status').value = a.status;
+    idx++;
+  });
+
+  // OKRs: replica tudo
+  (data.okrs || []).forEach((o, i) => {
+    const el = col => document.querySelector(`[data-okr="${i}"][data-col="${col}"]`);
+    if (el('obj'))     el('obj').value     = o.obj     || '';
+    if (el('target'))  el('target').value  = o.target  || '';
+    if (el('current')) el('current').value = o.current || '';
+    setProgress(i, o.pct || 0);
+  });
 }
 
 function applyData(data) {
