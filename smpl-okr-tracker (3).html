@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OKRs — SMPL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green:#1D9E75;--green-bg:#E1F5EE;--green-text:#085041;
+  --amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#633806;
+  --red:#A32D2D;--red-bg:#FCEBEB;--red-text:#501313;
+  --blue:#185FA5;--blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --purple:#534AB7;--purple-bg:#EEEDFE;--purple-text:#26215C;
+  --gray:#5F5E5A;--gray-bg:#F1EFE8;--gray-text:#2C2C2A;
+  --bg:#FAFAF8;--surface:#FFFFFF;--border:#E8E6DF;
+  --text:#1a1a18;--muted:#6b6b67;--hint:#9a9a96;
+  --font-display:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;--font-mono:'DM Mono',monospace;
+  --radius:10px;--radius-lg:16px;--radius-xl:22px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+}
+@media(prefers-color-scheme:dark){:root{
+  --green-bg:#04342C;--green-text:#9FE1CB;--amber-bg:#412402;--amber-text:#FAC775;
+  --red-bg:#501313;--red-text:#F7C1C1;--blue-bg:#042C53;--blue-text:#B5D4F4;
+  --purple-bg:#26215C;--purple-text:#CECBF6;--gray-bg:#2C2C2A;--gray-text:#D3D1C7;
+  --bg:#141412;--surface:#1e1e1c;--border:#2e2e2a;--text:#f0ede6;--muted:#9a9a96;--hint:#6b6b67;
+}}
+html{font-size:15px;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;gap:12px;}
+.nav-brand{display:flex;align-items:baseline;gap:12px;flex-shrink:0;}
+.nav-logo{font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:-.02em;}
+.nav-cycle{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:var(--purple-bg);color:var(--purple-text);}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;}
+.nav-tab{font-family:var(--font-body);font-size:13px;font-weight:400;padding:6px 13px;border-radius:var(--radius);border:none;background:none;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.nav-tab:hover{color:var(--text);background:var(--bg);}
+.nav-tab.active{color:var(--text);background:var(--bg);font-weight:500;}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.btn{font-family:var(--font-body);font-size:13px;font-weight:500;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--text);}
+.btn-accent{background:var(--text);color:var(--bg);border-color:var(--text);}
+.btn-accent:hover{opacity:.85;}
+.btn-sm{font-size:12px;padding:5px 11px;}
+
+/* LAYOUT */
+.main{max-width:980px;margin:0 auto;padding:32px 24px 80px;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;}
+.metric-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:8px;}
+.metric-val{font-family:var(--font-display);font-size:28px;font-weight:600;line-height:1;}
+.metric-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+
+/* OBJ CARD */
+.obj-list{display:flex;flex-direction:column;gap:10px;}
+.obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:box-shadow .2s;}
+.obj-card:hover{box-shadow:var(--shadow);}
+.obj-head{display:flex;align-items:center;gap:14px;padding:15px 20px;cursor:pointer;user-select:none;}
+.obj-icon{width:36px;height:36px;border-radius:var(--radius);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.obj-meta{flex:1;min-width:0;}
+.obj-title{font-size:14px;font-weight:500;margin-bottom:2px;}
+.obj-owner{font-size:12px;color:var(--muted);}
+.obj-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.pct-label{font-family:var(--font-mono);font-size:13px;font-weight:500;min-width:36px;text-align:right;}
+.bar-wrap{width:80px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.status-pip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.chevron{color:var(--hint);font-size:11px;transition:transform .2s;}
+.obj-card.open .chevron{transform:rotate(180deg);}
+
+/* KR ROWS */
+.kr-body{border-top:1px solid var(--border);}
+.kr-row{display:flex;align-items:center;gap:12px;padding:10px 20px 10px 70px;border-bottom:1px solid var(--border);}
+.kr-row:last-child{border-bottom:none;}
+.kr-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.kr-text{flex:1;font-size:13px;color:var(--muted);min-width:0;}
+.kr-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.kr-mono{font-family:var(--font-mono);font-size:12px;min-width:54px;text-align:right;}
+.kr-pill{font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;min-width:44px;text-align:center;font-family:var(--font-mono);}
+.edit-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+.edit-btn:hover{border-color:var(--text);color:var(--text);}
+.kr-edit-row{display:flex;gap:8px;align-items:center;padding:10px 20px 10px 70px;border-bottom:1px solid var(--border);background:var(--bg);}
+.kr-edit-row:last-child{border-bottom:none;}
+.edit-input{font-family:var(--font-mono);font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text);width:80px;}
+.edit-input:focus{outline:none;border-color:var(--green);}
+.edit-label{font-size:12px;color:var(--muted);}
+
+/* COLORS */
+.c-green{background:var(--green-bg);color:var(--green-text);}
+.c-amber{background:var(--amber-bg);color:var(--amber-text);}
+.c-red{background:var(--red-bg);color:var(--red-text);}
+.c-blue{background:var(--blue-bg);color:var(--blue-text);}
+.c-purple{background:var(--purple-bg);color:var(--purple-text);}
+.c-gray{background:var(--gray-bg);color:var(--gray-text);}
+.fill-green{background:var(--green);}
+.fill-amber{background:var(--amber);}
+.fill-red{background:var(--red);}
+.dot-green{background:var(--green);}
+.dot-amber{background:var(--amber);}
+.dot-red{background:var(--red);}
+
+/* CARDS GENÉRICOS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;}
+.card+.card{margin-top:14px;}
+.card-h{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:14px;}
+.fw-block{background:var(--bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;}
+.fw-block:last-child{margin-bottom:0;}
+.fw-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--hint);margin-bottom:4px;}
+.fw-text{font-size:13px;color:var(--muted);line-height:1.6;}
+.check-list{list-style:none;display:flex;flex-direction:column;}
+.check-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;padding:8px 0;color:var(--muted);border-bottom:1px solid var(--border);}
+.check-list li:last-child{border-bottom:none;}
+.chk{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--green);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;}
+.chk::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);}
+
+/* CALENDÁRIO */
+.quarter-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;}
+.month-col{background:var(--surface);padding:16px;}
+.month-name{font-family:var(--font-display);font-size:13px;font-weight:600;margin-bottom:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.ms-item{font-size:12px;padding:6px 10px;border-radius:8px;margin-bottom:5px;line-height:1.3;}
+.tl-r{display:flex;align-items:center;gap:14px;padding:9px 0;border-bottom:1px solid var(--border);}
+.tl-r:last-child{border-bottom:none;}
+.tl-lbl{font-size:12px;color:var(--muted);width:130px;flex-shrink:0;}
+.tl-track{flex:1;height:18px;background:var(--bg);border-radius:9px;position:relative;overflow:hidden;}
+.tl-fill{height:100%;border-radius:9px;display:flex;align-items:center;padding-left:10px;}
+.tl-fill-label{font-family:var(--font-mono);font-size:10px;font-weight:500;position:relative;z-index:1;}
+.tl-date{font-size:11px;color:var(--hint);width:60px;text-align:right;flex-shrink:0;}
+
+/* RETROSPECTIVA */
+.retro-chip{font-size:13px;padding:8px 12px;border-radius:var(--radius);margin-bottom:6px;}
+.retro-action{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.retro-action:last-child{border-bottom:none;}
+.retro-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);flex-shrink:0;margin-top:6px;}
+.retro-action-text{font-size:13px;color:var(--muted);}
+.kr-score-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
+.kr-score-row:last-child{border-bottom:none;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:28px 30px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md);}
+.modal-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:20px;}
+.field{margin-bottom:14px;}
+.field-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--hint);margin-bottom:5px;}
+.field-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:13px;}
+.field-input:focus{outline:none;border-color:var(--green);}
+select.field-input{cursor:pointer;}
+.field-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.kr-input-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.kr-num-lbl{font-family:var(--font-mono);font-size:12px;color:var(--hint);width:20px;flex-shrink:0;}
+.add-kr{background:none;border:none;font-family:var(--font-body);font-size:12px;color:var(--muted);cursor:pointer;padding:4px 0;}
+.add-kr:hover{color:var(--text);}
+.modal-footer{display:flex;gap:8px;margin-top:20px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:300;background:var(--text);color:var(--bg);font-size:13px;padding:10px 18px;border-radius:var(--radius);box-shadow:var(--shadow-md);opacity:0;pointer-events:none;transition:opacity .25s;}
+.toast.show{opacity:1;}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.sec-title{font-family:var(--font-display);font-size:17px;font-weight:600;}
+.last-upd{font-size:11px;color:var(--hint);margin-top:2px;}
+
+/* ═══════════════════════════════
+   VISÃO ANUAL
+═══════════════════════════════ */
+.vision-strip{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px;border-left:4px solid var(--purple);}
+.vision-strip-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--hint);margin-bottom:3px;}
+.vision-strip-text{font-size:13px;color:var(--muted);line-height:1.5;}
+.vision-strip-text strong{color:var(--text);}
+
+.year-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.ytab{font-size:12px;padding:5px 14px;border-radius:20px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:var(--surface);transition:all .15s;font-family:var(--font-body);}
+.ytab.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.ytab:hover:not(.active){border-color:var(--text);color:var(--text);}
+.year-panel{display:none;}
+.year-panel.active{display:block;}
+.year-meta{margin-bottom:14px;}
+.year-theme{font-size:15px;font-weight:500;margin-bottom:2px;}
+.year-rev{font-size:12px;color:var(--muted);}
+
+.ann-okr{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden;}
+.ann-head{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:pointer;}
+.ann-head:hover{background:var(--bg);}
+.ann-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;margin-top:1px;}
+.ann-info{flex:1;min-width:0;}
+.ann-title{font-size:14px;font-weight:500;line-height:1.4;margin-bottom:4px;}
+.ann-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.ann-tag{font-size:11px;padding:2px 8px;border-radius:20px;}
+.ann-chevron{font-size:11px;color:var(--hint);transition:transform .2s;margin-top:4px;flex-shrink:0;}
+.ann-okr.open .ann-chevron{transform:rotate(180deg);}
+.ann-body{border-top:1px solid var(--border);display:none;padding:4px 0;}
+.ann-okr.open .ann-body{display:block;}
+.ann-kr{padding:10px 16px 10px 56px;border-bottom:1px solid var(--border);}
+.ann-kr:last-child{border-bottom:none;}
+.ann-kr-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:3px;}
+.ann-kr-dot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;margin-top:5px;}
+.ann-kr-text{font-size:13px;font-weight:500;line-height:1.4;flex:1;}
+.ann-kr-detail{font-size:12px;color:var(--muted);padding-left:14px;line-height:1.5;}
+.ann-kr-when{font-size:11px;color:var(--hint);padding-left:14px;margin-top:2px;}
+.channel-pills{display:flex;flex-wrap:wrap;gap:4px;padding-left:14px;margin-top:4px;}
+.channel-pill{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--blue-bg);color:var(--blue-text);}
+.ann-init{background:var(--bg);margin:0 16px 12px 56px;border-radius:var(--radius);padding:10px 12px;}
+.ann-init-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:5px;}
+.ann-init-item{font-size:12px;color:var(--muted);padding:2px 0;display:flex;gap:6px;}
+.ann-init-item::before{content:'—';color:var(--hint);flex-shrink:0;}
+.ann-init-item.hi{color:var(--green-text);font-weight:500;}
+.ann-init-item.hi::before{color:var(--green);}
+
+.rev-ladder{display:flex;align-items:flex-end;gap:8px;height:72px;margin:12px 0 20px;}
+.rev-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.rev-bar{width:100%;border-radius:4px 4px 0 0;background:var(--bg);border:1px solid var(--border);display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;transition:background .2s;}
+.rev-bar.active{background:var(--blue-bg);border-color:var(--blue);}
+.rev-val{font-size:10px;font-weight:500;color:var(--muted);}
+.rev-bar.active .rev-val{color:var(--blue-text);}
+.rev-lbl{font-size:10px;color:var(--hint);text-align:center;}
+
+/* ═══════════════════════════════
+   TRIMESTRAL
+═══════════════════════════════ */
+.q-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.q-tab{font-size:12px;padding:5px 16px;border-radius:20px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:var(--surface);font-family:var(--font-body);transition:all .15s;}
+.q-tab.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.q-tab:hover:not(.active){border-color:var(--text);color:var(--text);}
+.q-panel{display:none;}
+.q-panel.active{display:block;}
+
+.q-okr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;}
+.q-okr-head{padding:14px 18px;border-bottom:1px solid var(--border);}
+.q-okr-title{font-size:14px;font-weight:500;margin-bottom:8px;}
+.q-okr-prog{display:flex;align-items:center;gap:10px;}
+.q-bar{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.q-bar-fill{height:100%;border-radius:4px;transition:width .4s;}
+.q-pct{font-family:var(--font-mono);font-size:13px;font-weight:500;min-width:36px;}
+.q-kr-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.q-kr-cell{padding:12px 18px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+.q-kr-cell:nth-child(even){border-right:none;}
+.q-kr-cell:last-child{border-bottom:none;}
+.q-kr-cell:nth-last-child(2):nth-child(odd){border-bottom:none;}
+.q-kr-label{font-size:11px;color:var(--hint);margin-bottom:4px;}
+.q-kr-text{font-size:12px;color:var(--muted);margin-bottom:6px;line-height:1.4;}
+.q-kr-vals{display:flex;align-items:center;gap:8px;}
+.q-kr-current{font-family:var(--font-mono);font-size:13px;font-weight:500;}
+.q-kr-target{font-family:var(--font-mono);font-size:12px;color:var(--hint);}
+.q-kr-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-family:var(--font-mono);}
+.q-mini-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.q-mini-fill{height:100%;border-radius:2px;}
+.q-edit-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--font-body);}
+.q-edit-btn:hover{border-color:var(--text);color:var(--text);}
+
+/* QUARTERLY TARGET CARD */
+.q-target-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.q-target{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;text-align:center;}
+.q-target.active-q{border-color:var(--blue);background:var(--blue-bg);}
+.q-target-label{font-size:11px;color:var(--hint);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;}
+.q-target-val{font-family:var(--font-display);font-size:20px;font-weight:600;}
+.q-target.active-q .q-target-label{color:var(--blue-text);}
+.q-target.active-q .q-target-val{color:var(--blue-text);}
+
+/* ═══════════════════════════════
+   SEMANAL
+═══════════════════════════════ */
+.week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.week-nav{display:flex;align-items:center;gap:10px;}
+.week-label{font-family:var(--font-display);font-size:15px;font-weight:600;}
+.week-btn{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;color:var(--muted);font-family:var(--font-body);}
+.week-btn:hover{border-color:var(--text);color:var(--text);}
+
+.week-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.week-metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;}
+.week-metric-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:6px;}
+.week-metric-val{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1;}
+.week-metric-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+.checkin-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.checkin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.checkin-head{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;}
+.checkin-head:hover{background:var(--bg);}
+.checkin-team{flex:1;}
+.checkin-team-name{font-size:13px;font-weight:500;}
+.checkin-team-okr{font-size:12px;color:var(--muted);}
+.checkin-status{display:flex;align-items:center;gap:8px;}
+.status-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;}
+.checkin-chevron{font-size:11px;color:var(--hint);transition:transform .2s;}
+.checkin-card.open .checkin-chevron{transform:rotate(180deg);}
+.checkin-body{border-top:1px solid var(--border);padding:14px 16px;display:none;}
+.checkin-card.open .checkin-body{display:block;}
+.checkin-field{margin-bottom:12px;}
+.checkin-field-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--hint);margin-bottom:5px;}
+.checkin-textarea{width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-family:var(--font-body);font-size:13px;background:var(--bg);color:var(--text);resize:vertical;min-height:56px;line-height:1.5;}
+.checkin-textarea:focus{outline:none;border-color:var(--green);}
+.checkin-status-select{display:flex;gap:6px;flex-wrap:wrap;}
+.status-opt{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:var(--surface);color:var(--muted);font-family:var(--font-body);transition:all .15s;}
+.status-opt:hover{border-color:var(--text);}
+.status-opt.sel-green{background:var(--green-bg);color:var(--green-text);border-color:var(--green);}
+.status-opt.sel-amber{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber);}
+.status-opt.sel-red{background:var(--red-bg);color:var(--red-text);border-color:var(--red);}
+.checkin-save{margin-top:12px;display:flex;gap:8px;align-items:center;}
+
+.history-list{display:flex;flex-direction:column;gap:6px;}
+.history-item{background:var(--bg);border-radius:var(--radius);padding:10px 14px;border-left:3px solid var(--border);}
+.history-item.h-green{border-left-color:var(--green);}
+.history-item.h-amber{border-left-color:var(--amber);}
+.history-item.h-red{border-left-color:var(--red);}
+.history-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.history-week{font-size:11px;color:var(--hint);}
+.history-status-badge{font-size:10px;padding:2px 8px;border-radius:20px;}
+.history-text{font-size:12px;color:var(--muted);line-height:1.5;}
+
+.pulse-chart{display:flex;align-items:flex-end;gap:4px;height:48px;margin:12px 0;}
+.pulse-bar{flex:1;border-radius:3px 3px 0 0;min-height:4px;transition:height .3s;}
+.pulse-bar.g{background:var(--green);}
+.pulse-bar.a{background:var(--amber);}
+.pulse-bar.r{background:var(--red);}
+.pulse-bar.n{background:var(--border);}
+
+@media(max-width:640px){
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .two-col{grid-template-columns:1fr;}
+  .quarter-wrap{grid-template-columns:1fr;}
+  .q-target-row{grid-template-columns:repeat(2,1fr);}
+  .week-grid{grid-template-columns:repeat(2,1fr);}
+  .q-kr-grid{grid-template-columns:1fr;}
+  .q-kr-cell{border-right:none!important;}
+  .nav-tabs{display:none;}
+  .main{padding:20px 14px 60px;}
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.obj-card{animation:fadeUp .3s ease both;}
+.obj-card:nth-child(1){animation-delay:.04s;}
+.obj-card:nth-child(2){animation-delay:.08s;}
+.obj-card:nth-child(3){animation-delay:.12s;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="nav-logo">SMPL</span>
+    <span class="nav-cycle">Q2 · Abr–Jun 2026</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('overview',this)">Visão Geral</button>
+    <button class="nav-tab" onclick="switchTab('trimestral',this)">Trimestral</button>
+    <button class="nav-tab" onclick="switchTab('semanal',this)">Semanal</button>
+    <button class="nav-tab" onclick="switchTab('anual',this)">Anual 2026–2030</button>
+    <button class="nav-tab" onclick="switchTab('definir',this)">Como Definir</button>
+    <button class="nav-tab" onclick="switchTab('retrospectiva',this)">Retrospectiva</button>
+  </div>
+  <div class="nav-right">
+    <button class="btn btn-sm" onclick="openModal()">+ Novo OKR</button>
+    <button class="btn btn-sm" onclick="exportCSV()">CSV</button>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- ══════════ VISÃO GERAL ══════════ -->
+<div class="panel active" id="panel-overview">
+  <div class="sec-head">
+    <div>
+      <div class="sec-title">OKRs — Q2 2026</div>
+      <div class="last-upd" id="last-upd-label"></div>
+    </div>
+  </div>
+  <div class="metrics" id="metrics-row"></div>
+  <div class="obj-list" id="obj-list"></div>
+  <div id="new-okr-area" style="display:none;margin-top:16px;"></div>
+</div>
+
+<!-- ══════════ TRIMESTRAL ══════════ -->
+<div class="panel" id="panel-trimestral">
+  <div class="sec-head">
+    <div class="sec-title">Acompanhamento Trimestral 2026</div>
+  </div>
+
+  <div class="vision-strip">
+    <div class="vision-strip-label">Visão 2030</div>
+    <div class="vision-strip-text">Ser o player digital com o mesmo ou maior alcance que a Globo — <strong>R$200M em comissão/ano</strong></div>
+  </div>
+
+  <div class="q-target-row">
+    <div class="q-target"><div class="q-target-label">Q1 Meta</div><div class="q-target-val">R$2.5M</div></div>
+    <div class="q-target active-q"><div class="q-target-label">Q2 Meta ← atual</div><div class="q-target-val">R$3.5M</div></div>
+    <div class="q-target"><div class="q-target-label">Q3 Meta</div><div class="q-target-val">R$4M</div></div>
+    <div class="q-target"><div class="q-target-label">Q4 Meta</div><div class="q-target-val">R$5M</div></div>
+  </div>
+
+  <div class="q-tabs">
+    <button class="q-tab active" onclick="switchQ('Q1',this)">Q1 · Jan–Mar</button>
+    <button class="q-tab" onclick="switchQ('Q2',this)">Q2 · Abr–Jun</button>
+    <button class="q-tab" onclick="switchQ('Q3',this)">Q3 · Jul–Set</button>
+    <button class="q-tab" onclick="switchQ('Q4',this)">Q4 · Out–Dez</button>
+  </div>
+
+  <div id="q-panels"></div>
+</div>
+
+<!-- ══════════ SEMANAL ══════════ -->
+<div class="panel" id="panel-semanal">
+  <div class="week-header">
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">← anterior</button>
+      <div class="week-label" id="week-label">Semana 17 · 21–27 abr</div>
+      <button class="week-btn" onclick="changeWeek(1)">próxima →</button>
+    </div>
+    <button class="btn btn-sm btn-accent" onclick="saveAllCheckins()">Salvar semana</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-h">Prioridades SMPL da semana</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Quais são os 3 focos mais importantes desta semana para toda a empresa?</div>
+    <div style="display:flex;flex-direction:column;gap:10px;" id="priorities-inputs">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--hint);min-width:20px;">1.</span>
+        <input id="pri-1" type="text" class="field-input" placeholder="Ex: Fechar contrato com Aqueles Caras" style="flex:1;">
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--hint);min-width:20px;">2.</span>
+        <input id="pri-2" type="text" class="field-input" placeholder="Ex: Finalizar media kit Copa do Mundo" style="flex:1;">
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--hint);min-width:20px;">3.</span>
+        <input id="pri-3" type="text" class="field-input" placeholder="Ex: Implantar Asana para o time de operações" style="flex:1;">
+      </div>
+    </div>
+  </div>
+
+  <div style="font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:12px;">Check-in por time</div>
+  <div class="checkin-list" id="checkin-list"></div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-h">Histórico de check-ins</div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+</div>
+
+<!-- ══════════ ANUAL ══════════ -->
+<div class="panel" id="panel-anual">
+  <div class="sec-head">
+    <div class="sec-title">OKRs Anuais 2026–2030</div>
+  </div>
+  <div class="vision-strip">
+    <div class="vision-strip-label">Visão SMPL 2030</div>
+    <div class="vision-strip-text"><strong>Ser o player digital com o mesmo ou maior alcance que a Globo no Brasil</strong> — R$200M em comissão/ano. A internet será a nova TV, e a SMPL será a principal emissora.</div>
+  </div>
+  <div style="font-size:12px;color:var(--hint);margin-bottom:4px;">Escada de receita</div>
+  <div class="rev-ladder" id="rev-ladder"></div>
+  <div class="year-tabs" id="year-tabs"></div>
+  <div id="year-panels"></div>
+</div>
+
+<!-- ══════════ DEFINIR ══════════ -->
+<div class="panel" id="panel-definir">
+  <div class="sec-head"><div class="sec-title">Como Definir Bons OKRs</div></div>
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-h">A estrutura</div>
+        <div class="fw-block"><div class="fw-label">Objetivo (O)</div><div class="fw-text">Onde queremos chegar. Qualitativo, inspirador e temporal.</div></div>
+        <div class="fw-block"><div class="fw-label">Key Result (KR)</div><div class="fw-text">Como sabemos que chegamos lá. Quantitativo, mensurável. 2–4 por objetivo.</div></div>
+        <div class="fw-block"><div class="fw-label">Iniciativa</div><div class="fw-text">O que faremos concretamente para mover cada KR.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">Escala de confiança</div>
+        <div class="fw-block"><div class="fw-label">0.7+</div><div class="fw-text">No caminho — revisão mensal mantém o ritmo</div></div>
+        <div class="fw-block"><div class="fw-label">0.4–0.6</div><div class="fw-text">Em risco — discutir bloqueios na próxima reunião</div></div>
+        <div class="fw-block"><div class="fw-label">0–0.3</div><div class="fw-text">Atrasado — replanejamento necessário agora</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">Critérios para bons objetivos</div>
+        <ul class="check-list">
+          <li><span class="chk"></span>Inspirador: motiva o time a agir</li>
+          <li><span class="chk"></span>Qualitativo: sem números (eles ficam no KR)</li>
+          <li><span class="chk"></span>Temporal: claro para qual ciclo se aplica</li>
+          <li><span class="chk"></span>Alinhado à estratégia da empresa</li>
+          <li><span class="chk"></span>Desafiador mas alcançável com esforço real</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-h">Critérios SMART para Key Results</div>
+        <ul class="check-list">
+          <li><span class="chk"></span><span><strong>S</strong>pecific — específico e claro</span></li>
+          <li><span class="chk"></span><span><strong>M</strong>easurable — sempre com número</span></li>
+          <li><span class="chk"></span><span><strong>A</strong>chievable — desafiador mas possível</span></li>
+          <li><span class="chk"></span><span><strong>R</strong>elevant — relevante para o objetivo-pai</span></li>
+          <li><span class="chk"></span><span><strong>T</strong>ime-bound — prazo definido</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-h">Cadência de revisão</div>
+        <div class="fw-block"><div class="fw-label">Semanal</div><div class="fw-text">Check-in de 15min — status + bloqueios</div></div>
+        <div class="fw-block"><div class="fw-label">Mensal</div><div class="fw-text">Revisão completa dos KRs — 60min</div></div>
+        <div class="fw-block"><div class="fw-label">Trimestral</div><div class="fw-text">Retrospectiva + planejamento do próximo ciclo — 2h</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RETROSPECTIVA ══════════ -->
+<div class="panel" id="panel-retrospectiva">
+  <div class="sec-head"><div class="sec-title">Retrospectiva Q1 2026</div></div>
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-h">Score geral do ciclo</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:13px;color:var(--muted)">Média dos OKRs</span>
+          <span style="font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--amber)">0.64</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px">
+          <div style="height:100%;width:64%;background:var(--amber);border-radius:3px"></div>
+        </div>
+        <div style="font-size:11px;color:var(--hint);margin-bottom:16px">Meta: ≥ 0.7 · Intervalo saudável: 0.6–0.8</div>
+        <div class="kr-score-row"><span style="font-size:12px;color:var(--muted)">Receita de patrocínios</span><span class="kr-pill c-green">0.78</span></div>
+        <div class="kr-score-row"><span style="font-size:12px;color:var(--muted)">Canais prospectados</span><span class="kr-pill c-amber">0.55</span></div>
+        <div class="kr-score-row"><span style="font-size:12px;color:var(--muted)">Propostas enviadas</span><span class="kr-pill c-red">0.40</span></div>
+      </div>
+      <div class="card"><div class="card-h">O que funcionou</div>
+        <div class="retro-chip c-green">Pipeline Comercial mais estruturado</div>
+        <div class="retro-chip c-green">Propostas com maior personalização</div>
+        <div class="retro-chip c-green">Canal Foco — pacote Copa fechado</div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><div class="card-h">O que melhorar</div>
+        <div class="retro-chip c-amber">Reduzir ciclo de aprovação de propostas</div>
+        <div class="retro-chip c-amber">Aumentar prospecção ativa</div>
+        <div class="retro-chip c-red" style="margin-bottom:0">Melhorar rastreamento de entregas</div>
+      </div>
+      <div class="card"><div class="card-h">Aprendizados</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">
+          OKRs muito ambiciosos geraram frustração. No Q2, usar 0.6–0.8 como intervalo saudável.<br><br>
+          KRs sem dono claro ficaram sem progresso. Atribuir responsável individual por cada KR.
+        </div>
+      </div>
+      <div class="card"><div class="card-h">Ações para Q2</div>
+        <div class="retro-action"><div class="retro-dot"></div><div class="retro-action-text">Definir dono por KR no kick-off</div></div>
+        <div class="retro-action"><div class="retro-dot"></div><div class="retro-action-text">Check-in semanal de 15min toda segunda</div></div>
+        <div class="retro-action"><div class="retro-dot"></div><div class="retro-action-text">Registrar progresso toda semana</div></div>
+        <div class="retro-action" style="border:none"><div class="retro-dot"></div><div class="retro-action-text">Revisar KRs em risco antes do mês fechar</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Novo Objetivo</div>
+    <div class="field"><div class="field-label">Título do objetivo</div><input class="field-input" id="m-title" placeholder="Ex: Ser referência em patrocínios YouTube BR"></div>
+    <div class="field-2col">
+      <div class="field"><div class="field-label">Time responsável</div>
+        <select class="field-input" id="m-team"><option>Comercial</option><option>Planejamento</option><option>Conteúdo / Social</option><option>Atendimento</option><option>Todos</option></select>
+      </div>
+      <div class="field"><div class="field-label">Ícone</div>
+        <select class="field-input" id="m-icon"><option value="💰">💰 Receita</option><option value="📈">📈 Crescimento</option><option value="🤝">🤝 Parceria</option><option value="🎯">🎯 Performance</option><option value="🚀">🚀 Produto</option><option value="🏆">🏆 Liderança</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">Key Results (mín. 2, máx. 4)</div>
+      <div id="m-krs">
+        <div class="kr-input-row"><span class="kr-num-lbl">KR1</span><input class="field-input" placeholder="Resultado mensurável com número e prazo"></div>
+        <div class="kr-input-row"><span class="kr-num-lbl">KR2</span><input class="field-input" placeholder="Resultado mensurável com número e prazo"></div>
+      </div>
+      <button class="add-kr" onclick="addKRField()">+ Adicionar KR</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-accent" onclick="saveOKR()">Salvar Objetivo</button>
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+const STORE_KEY = 'smpl_okrs_v4';
+
+const DEFAULT_DATA = {
+  lastUpdated: null,
+  objectives: [
+    { id:1, title:"Atingir R$15M em comissão e construir pipeline para 2027", owner:"Comercial", icon:"💰", color:"green",
+      krs:[
+        {id:11,text:"Fechar R$15M em comissão acumulada no ano",current:3800,target:15000,unit:"R$k"},
+        {id:12,text:"Construir pipeline de R$35M para 2027",current:12000,target:35000,unit:"R$k"},
+        {id:13,text:"Ticket médio por contrato ≥ R$300k",current:260,target:300,unit:"R$k"},
+        {id:14,text:"Taxa de renovação / upsell ≥ 55%",current:38,target:55,unit:"%"}
+      ]
+    },
+    { id:2, title:"Consolidar a SMPL como motor executivo de ponta a ponta", owner:"Todos os times", icon:"🚀", color:"purple",
+      krs:[
+        {id:21,text:"Dream team onboardado: Aqueles Caras, Porta dos Fundos, Kings League, Julio Cocielo e Canal Foco",current:2,target:5,unit:"canais"},
+        {id:22,text:"Documentar e implementar processos operacionais das 4 verticais com SLA",current:1,target:4,unit:"verticais"},
+        {id:23,text:"NPS dos criadores parceiros ≥ 75",current:62,target:75,unit:"pts"}
+      ]
+    },
+    { id:3, title:"Ser referência de conteúdo esportivo e TV-grade no YouTube BR", owner:"Conteúdo", icon:"🏆", color:"blue",
+      krs:[
+        {id:31,text:"Crescimento YoY nos seguidores totais de pelo menos 15%",current:7,target:15,unit:"% YoY"},
+        {id:32,text:"Crescimento YoY de visualizações totais de pelo menos 25%",current:11,target:25,unit:"% YoY"},
+        {id:33,text:"Lançamento de 3 produções de alto impacto com padrão de TV",current:0,target:3,unit:"produções"}
+      ]
+    }
+  ],
+  weeklyCheckins: {},
+  currentWeek: 17
+};
+
+function loadData(){
+  try{ const r=localStorage.getItem(STORE_KEY); if(r) return JSON.parse(r); }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+function saveData(d){
+  d.lastUpdated=new Date().toISOString();
+  try{ localStorage.setItem(STORE_KEY,JSON.stringify(d)); }catch(e){}
+  return d;
+}
+let state=loadData();
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function pct(kr){ return Math.min(100,Math.round((kr.current/kr.target)*100)); }
+function statusOf(p){ return p>=70?'green':p>=40?'amber':'red'; }
+function objProgress(obj){ if(!obj.krs.length)return 0; return Math.round(obj.krs.reduce((s,kr)=>s+pct(kr),0)/obj.krs.length); }
+function iconBg(c){ return {green:'var(--green-bg)',blue:'var(--blue-bg)',purple:'var(--purple-bg)',amber:'var(--amber-bg)'}[c]||'var(--gray-bg)'; }
+function weekLabel(w){ const d=new Date(2026,0,4+(w-1)*7); const e=new Date(d); e.setDate(d.getDate()+6); const fmt=x=>x.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}); return `Semana ${w} · ${fmt(d)}–${fmt(e)}`; }
+
+// ═══════════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════════
+function renderMetrics(){
+  const objs=state.objectives, allKRs=objs.flatMap(o=>o.krs);
+  const overall=objs.length?Math.round(objs.reduce((s,o)=>s+objProgress(o),0)/objs.length):0;
+  document.getElementById('metrics-row').innerHTML=`
+    <div class="metric"><div class="metric-label">Progresso geral</div><div class="metric-val">${overall}%</div><div class="metric-sub">${objs.length} objetivos ativos</div></div>
+    <div class="metric"><div class="metric-label">KRs no prazo</div><div class="metric-val" style="color:var(--green)">${allKRs.filter(k=>statusOf(pct(k))==='green').length}</div><div class="metric-sub">de ${allKRs.length} totais</div></div>
+    <div class="metric"><div class="metric-label">Em risco</div><div class="metric-val" style="color:var(--amber)">${allKRs.filter(k=>statusOf(pct(k))==='amber').length}</div><div class="metric-sub">precisam de atenção</div></div>
+    <div class="metric"><div class="metric-label">Abaixo do esperado</div><div class="metric-val" style="color:var(--red)">${allKRs.filter(k=>statusOf(pct(k))==='red').length}</div><div class="metric-sub">ação necessária</div></div>`;
+  const lbl=document.getElementById('last-upd-label');
+  if(state.lastUpdated){ const d=new Date(state.lastUpdated); lbl.textContent='Atualizado em '+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  else lbl.textContent='Dados de exemplo — edite os KRs para salvar';
+}
+
+function renderObjectives(){
+  document.getElementById('obj-list').innerHTML=state.objectives.map(obj=>{
+    const prog=objProgress(obj), st=statusOf(prog);
+    return `<div class="obj-card" id="obj-${obj.id}">
+      <div class="obj-head" onclick="toggleObj(${obj.id})">
+        <div class="obj-icon" style="background:${iconBg(obj.color)}">${obj.icon}</div>
+        <div class="obj-meta"><div class="obj-title">${obj.title}</div><div class="obj-owner">${obj.owner}</div></div>
+        <div class="obj-right">
+          <div class="bar-wrap"><div class="bar-fill fill-${st}" style="width:${prog}%"></div></div>
+          <div class="pct-label">${prog}%</div>
+          <div class="status-pip dot-${st}"></div>
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+      <div class="kr-body" style="display:none" id="krbody-${obj.id}">
+        ${obj.krs.map(kr=>renderKRRow(obj.id,kr)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderKRRow(objId,kr){
+  const p=pct(kr), st=statusOf(p);
+  return `<div class="kr-row" id="kr-${kr.id}">
+    <div class="kr-dot dot-${st}"></div>
+    <div class="kr-text">${kr.text}</div>
+    <div class="kr-controls">
+      <span class="kr-mono" style="color:var(--muted)">${kr.current} / ${kr.target} ${kr.unit}</span>
+      <div class="bar-wrap" style="width:60px"><div class="bar-fill fill-${st}" style="width:${p}%"></div></div>
+      <span class="kr-pill c-${st}">${p}%</span>
+      <button class="edit-btn" onclick="startEdit(${objId},${kr.id},event)">Editar</button>
+    </div>
+  </div>`;
+}
+
+function renderKREdit(objId,kr){
+  return `<div class="kr-edit-row" id="kr-${kr.id}">
+    <div class="kr-dot" style="background:var(--blue)"></div>
+    <div class="kr-text">${kr.text}</div>
+    <div class="kr-controls" style="gap:6px">
+      <span class="edit-label">Atual:</span>
+      <input class="edit-input" id="edit-val-${kr.id}" type="number" value="${kr.current}" min="0">
+      <span class="edit-label">/ ${kr.target} ${kr.unit}</span>
+      <button class="edit-btn" style="border-color:var(--green);color:var(--green)" onclick="saveEdit(${objId},${kr.id})">Salvar</button>
+      <button class="edit-btn" onclick="cancelEdit(${objId},${kr.id})">×</button>
+    </div>
+  </div>`;
+}
+
+function toggleObj(id){
+  const card=document.getElementById('obj-'+id), body=document.getElementById('krbody-'+id);
+  const isOpen=card.classList.toggle('open');
+  body.style.display=isOpen?'block':'none';
+}
+function startEdit(objId,krId,e){
+  e.stopPropagation();
+  const kr=state.objectives.find(o=>o.id===objId).krs.find(k=>k.id===krId);
+  document.getElementById('kr-'+krId).outerHTML=renderKREdit(objId,kr);
+  setTimeout(()=>{ const i=document.getElementById('edit-val-'+krId); if(i)i.focus(); },50);
+}
+function saveEdit(objId,krId){
+  const inp=document.getElementById('edit-val-'+krId); if(!inp)return;
+  const val=parseFloat(inp.value); if(isNaN(val))return;
+  const kr=state.objectives.find(o=>o.id===objId).krs.find(k=>k.id===krId);
+  kr.current=val; state=saveData(state);
+  document.getElementById('kr-'+krId).outerHTML=renderKRRow(objId,kr);
+  renderMetrics(); renderQuarterly(); showToast('Progresso salvo!');
+}
+function cancelEdit(objId,krId){
+  const kr=state.objectives.find(o=>o.id===objId).krs.find(k=>k.id===krId);
+  document.getElementById('kr-'+krId).outerHTML=renderKRRow(objId,kr);
+}
+
+// ═══════════════════════════════════════════
+// TRIMESTRAL
+// ═══════════════════════════════════════════
+const Q_TARGETS = {
+  Q1:{label:'Q1 · Jan–Mar',rev:'R$2.5M',months:'Jan–Mar'},
+  Q2:{label:'Q2 · Abr–Jun',rev:'R$3.5M',months:'Abr–Jun'},
+  Q3:{label:'Q3 · Jul–Set',rev:'R$4M',months:'Jul–Set'},
+  Q4:{label:'Q4 · Out–Dez',rev:'R$5M',months:'Out–Dez'}
+};
+let currentQ='Q2';
+
+function renderQuarterly(){
+  const container=document.getElementById('q-panels');
+  if(!container)return;
+  container.innerHTML=Object.keys(Q_TARGETS).map(q=>{
+    const active=q===currentQ;
+    return `<div class="q-panel ${active?'active':''}" id="qp-${q}">${renderQContent(q)}</div>`;
+  }).join('');
+}
+
+// Quarterly targets per OKR per KR
+// O1 (id=1): R$15M ano → Q1 R$2.5M, Q2 R$3.5M, Q3 R$4M, Q4 R$5M
+// O2 (id=2): Dream team 5 canais; processos 4 verticais; NPS 75
+// O3 (id=3): YoY seguidores +15%, YoY views +25%, 3 produções
+const Q_KR_TARGETS = {
+  Q1: {
+    1: [
+      {target:2500, label:'Meta Q1', theme:'Arrancar: primeiros contratos do ano'},
+      {target:8000,  label:'Pipeline Q1'},
+      {target:280,   label:'Ticket Q1'},
+      {target:45,    label:'Renovação Q1'}
+    ],
+    2: [
+      {target:2, label:'Dream team Q1: 2 canais onboardados'},
+      {target:2, label:'2 verticais documentadas'},
+      {target:65, label:'NPS Q1'}
+    ],
+    3: [
+      {target:4,  label:'YoY seguidores Q1 (base acumulada)'},
+      {target:6,  label:'YoY views Q1 (base acumulada)'},
+      {target:1,  label:'1ª produção lançada'}
+    ]
+  },
+  Q2: {
+    1: [
+      {target:6000,  label:'Meta Q2 (+R$3.5M)', theme:'Copa do Mundo: pico de patrocínios'},
+      {target:18000, label:'Pipeline Q2'},
+      {target:290,   label:'Ticket Q2'},
+      {target:48,    label:'Renovação Q2'}
+    ],
+    2: [
+      {target:3, label:'Dream team Q2: 3 canais onboardados'},
+      {target:3, label:'3 verticais documentadas'},
+      {target:68, label:'NPS Q2'}
+    ],
+    3: [
+      {target:8,  label:'YoY seguidores Q2'},
+      {target:12, label:'YoY views Q2'},
+      {target:1,  label:'2ª produção lançada'}
+    ]
+  },
+  Q3: {
+    1: [
+      {target:10000, label:'Meta Q3 (+R$4M)', theme:'Escalar: contratos anuais e renovações'},
+      {target:27000, label:'Pipeline Q3'},
+      {target:295,   label:'Ticket Q3'},
+      {target:52,    label:'Renovação Q3'}
+    ],
+    2: [
+      {target:4, label:'Dream team Q3: 4 canais onboardados'},
+      {target:4, label:'4 verticais documentadas'},
+      {target:72, label:'NPS Q3'}
+    ],
+    3: [
+      {target:11, label:'YoY seguidores Q3'},
+      {target:19, label:'YoY views Q3'},
+      {target:2,  label:'3ª produção lançada'}
+    ]
+  },
+  Q4: {
+    1: [
+      {target:15000, label:'Meta Q4 (+R$5M) — ano fechado', theme:'Fechar o ano: R$15M e pipeline 2027'},
+      {target:35000, label:'Pipeline 2027 construído'},
+      {target:300,   label:'Ticket ≥ R$300k'},
+      {target:55,    label:'Renovação ≥ 55%'}
+    ],
+    2: [
+      {target:5, label:'Dream team completo: 5 canais'},
+      {target:4, label:'4 verticais com SLA ativo'},
+      {target:75, label:'NPS ≥ 75'}
+    ],
+    3: [
+      {target:15, label:'YoY seguidores ≥ 15% — meta anual'},
+      {target:25, label:'YoY views ≥ 25% — meta anual'},
+      {target:3,  label:'3 produções entregues — meta anual'}
+    ]
+  }
+};
+
+const Q_THEMES = {
+  Q1: 'Arrancar: primeiros contratos e onboarding do dream team',
+  Q2: 'Copa do Mundo: pico de patrocínios e produção de conteúdo',
+  Q3: 'Escalar: contratos anuais, renovações e 3ª produção',
+  Q4: 'Fechar o ano: R$15M, dream team completo e NPS ≥ 75'
+};
+
+function renderQContent(q){
+  const qTargets = Q_KR_TARGETS[q]||Q_KR_TARGETS.Q2;
+  const theme = Q_THEMES[q]||'';
+  let html = `<div style="background:var(--purple-bg);color:var(--purple-text);border-radius:var(--radius-lg);padding:10px 14px;margin-bottom:14px;font-size:13px;line-height:1.5;">
+    <strong>${q}:</strong> ${theme}
+  </div>`;
+  html += state.objectives.map((obj,oi)=>{
+    const qKRs = qTargets[obj.id]||[];
+    const krCells = obj.krs.map((kr,ki)=>{
+      const qkr = qKRs[ki]||{};
+      const qTarget = qkr.target||kr.target;
+      const qLabel  = qkr.label||kr.text;
+      // progress = current vs quarterly target (cumulative)
+      const p = Math.min(100, Math.round((kr.current/qTarget)*100));
+      const s = statusOf(p);
+      return `<div class="q-kr-cell">
+        <div class="q-kr-label">${kr.unit}</div>
+        <div class="q-kr-text">${kr.text}</div>
+        <div style="font-size:10px;color:var(--hint);margin-bottom:4px;">Meta ${q}: ${qTarget.toLocaleString('pt-BR')} ${kr.unit}</div>
+        <div class="q-kr-vals">
+          <span class="q-kr-current">${kr.current.toLocaleString('pt-BR')}</span>
+          <span class="q-kr-target">/ ${qTarget.toLocaleString('pt-BR')}</span>
+          <div class="q-mini-bar"><div class="q-mini-fill fill-${s}" style="width:${p}%"></div></div>
+          <span class="q-kr-pill c-${s}">${p}%</span>
+          <button class="q-edit-btn" onclick="startEditQ(${obj.id},${kr.id},event)">↑</button>
+        </div>
+      </div>`;
+    }).join('');
+    // overall progress vs quarterly targets
+    const qPcts = obj.krs.map((kr,ki)=>{
+      const qt=(qKRs[ki]||{}).target||kr.target;
+      return Math.min(100,Math.round((kr.current/qt)*100));
+    });
+    const qProg = Math.round(qPcts.reduce((a,b)=>a+b,0)/qPcts.length);
+    const qSt = statusOf(qProg);
+    return `<div class="q-okr-card">
+      <div class="q-okr-head">
+        <div class="q-okr-title">${obj.icon} ${obj.title}</div>
+        <div class="q-okr-prog">
+          <span style="font-size:12px;color:var(--muted);min-width:90px">${obj.owner}</span>
+          <div class="q-bar"><div class="q-bar-fill fill-${qSt}" style="width:${qProg}%"></div></div>
+          <span class="q-pct" style="color:var(--${qSt})">${qProg}%</span>
+          <div class="status-pip dot-${qSt}"></div>
+        </div>
+      </div>
+      <div class="q-kr-grid">${krCells}</div>
+    </div>`;
+  }).join('');
+  return html;
+}
+
+function startEditQ(objId,krId,e){
+  e.stopPropagation();
+  const kr=state.objectives.find(o=>o.id===objId).krs.find(k=>k.id===krId);
+  const val=prompt(`Atualizar "${kr.text}"\nValor atual: ${kr.current} ${kr.unit}\nNovo valor:`,kr.current);
+  if(val===null||val==='')return;
+  const n=parseFloat(val); if(isNaN(n))return;
+  kr.current=n; state=saveData(state);
+  renderQuarterly(); renderMetrics(); renderObjectives();
+  showToast('KR atualizado!');
+}
+
+function switchQ(q,el){
+  currentQ=q;
+  document.querySelectorAll('.q-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.q-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('qp-'+q).classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// SEMANAL
+// ═══════════════════════════════════════════
+const TEAMS = [
+  {id:'comercial', name:'Comercial', okr:'O1 — Receita & Pipeline'},
+  {id:'operacoes', name:'Operações', okr:'O2 — Motor Executivo'},
+  {id:'conteudo',  name:'Conteúdo',  okr:'O3 — YouTube & Produção'},
+  {id:'juridico',  name:'Jurídico / Financeiro', okr:'O2 — Processos & SLA'}
+];
+
+function renderPriorities(){
+  const wk=state.currentWeek;
+  const pri=((state.weeklyCheckins[wk]||{})._priorities)||['','',''];
+  ['1','2','3'].forEach((n,i)=>{
+    const el=document.getElementById('pri-'+n);
+    if(el) el.value=pri[i]||'';
+  });
+}
+
+function savePriorities(){
+  const wk=state.currentWeek;
+  if(!state.weeklyCheckins[wk]) state.weeklyCheckins[wk]={};
+  state.weeklyCheckins[wk]._priorities=[
+    (document.getElementById('pri-1')||{value:''}).value||'',
+    (document.getElementById('pri-2')||{value:''}).value||'',
+    (document.getElementById('pri-3')||{value:''}).value||''
+  ];
+}
+
+
+function renderCheckinList(){
+  const container=document.getElementById('checkin-list');
+  if(!container)return;
+  const thisWeek=state.weeklyCheckins[state.currentWeek]||{};
+  container.innerHTML=TEAMS.map(team=>{
+    const ci=thisWeek[team.id]||{status:'',progress:'',blockers:'',next:''};
+    const st=ci.status||'none';
+    const badgeClass=st==='green'?'c-green':st==='amber'?'c-amber':st==='red'?'c-red':'c-gray';
+    const badgeLabel=st==='green'?'No caminho':st==='amber'?'Em risco':st==='red'?'Atrasado':'Sem check-in';
+    return `<div class="checkin-card" id="cc-${team.id}">
+      <div class="checkin-head" onclick="toggleCheckin('${team.id}')">
+        <div class="checkin-team">
+          <div class="checkin-team-name">${team.name}</div>
+          <div class="checkin-team-okr">${team.okr}</div>
+        </div>
+        <div class="checkin-status">
+          <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="checkin-chevron">▼</span>
+        </div>
+      </div>
+      <div class="checkin-body" id="cb-${team.id}">
+        <div class="checkin-field">
+          <div class="checkin-field-label">Status desta semana</div>
+          <div class="checkin-status-select" id="cs-${team.id}">
+            ${['green','amber','red'].map(s=>`<button class="status-opt ${st===s?'sel-'+s:''}" onclick="setStatus('${team.id}','${s}')">${s==='green'?'No caminho':s==='amber'?'Em risco':'Atrasado'}</button>`).join('')}
+          </div>
+        </div>
+        <div class="checkin-field">
+          <div class="checkin-field-label">O que avançou esta semana?</div>
+          <textarea class="checkin-textarea" id="cp-${team.id}" placeholder="Descreva os principais avanços...">${ci.progress||''}</textarea>
+        </div>
+        <div class="checkin-field">
+          <div class="checkin-field-label">Bloqueios e riscos</div>
+          <textarea class="checkin-textarea" id="cb2-${team.id}" placeholder="O que está impedindo o progresso?">${ci.blockers||''}</textarea>
+        </div>
+        <div class="checkin-field">
+          <div class="checkin-field-label">Próximos passos (semana que vem)</div>
+          <textarea class="checkin-textarea" id="cn-${team.id}" placeholder="O que o time vai fazer na próxima semana?">${ci.next||''}</textarea>
+        </div>
+        <div class="checkin-save">
+          <button class="btn btn-sm btn-accent" onclick="saveCheckin('${team.id}')">Salvar check-in</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const container=document.getElementById('history-list');
+  if(!container)return;
+  const entries=[];
+  Object.entries(state.weeklyCheckins).forEach(([week,weekData])=>{
+    Object.entries(weekData).forEach(([teamId,ci])=>{
+      if(ci.progress||ci.blockers){ entries.push({week:parseInt(week),teamId,ci}); }
+    });
+  });
+  entries.sort((a,b)=>b.week-a.week);
+  if(!entries.length){ container.innerHTML='<div style="font-size:13px;color:var(--hint);padding:8px 0">Nenhum check-in registrado ainda.</div>'; return; }
+  container.innerHTML=entries.slice(0,12).map(({week,teamId,ci})=>{
+    const team=TEAMS.find(t=>t.id===teamId);
+    const st=ci.status||'none';
+    const hClass=st==='green'?'h-green':st==='amber'?'h-amber':st==='red'?'h-red':'';
+    const badgeClass=st==='green'?'c-green':st==='amber'?'c-amber':st==='red'?'c-red':'c-gray';
+    const badgeLabel=st==='green'?'No caminho':st==='amber'?'Em risco':st==='red'?'Atrasado':'—';
+    return `<div class="history-item ${hClass}">
+      <div class="history-meta">
+        <span style="font-size:12px;font-weight:500">${team?team.name:teamId}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="history-week">Semana ${week}</span>
+          <span class="history-status-badge ${badgeClass}">${badgeLabel}</span>
+        </div>
+      </div>
+      ${ci.progress?`<div class="history-text"><strong>Avanços:</strong> ${ci.progress}</div>`:''}
+      ${ci.blockers?`<div class="history-text" style="margin-top:3px"><strong>Bloqueios:</strong> ${ci.blockers}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleCheckin(id){
+  const card=document.getElementById('cc-'+id), body=document.getElementById('cb-'+id);
+  const open=card.classList.toggle('open');
+  body.style.display=open?'block':'none';
+}
+
+function setStatus(teamId,status){
+  if(!state.weeklyCheckins[state.currentWeek]) state.weeklyCheckins[state.currentWeek]={};
+  if(!state.weeklyCheckins[state.currentWeek][teamId]) state.weeklyCheckins[state.currentWeek][teamId]={};
+  state.weeklyCheckins[state.currentWeek][teamId].status=status;
+  const sel=document.getElementById('cs-'+teamId);
+  if(sel) sel.querySelectorAll('.status-opt').forEach(b=>{
+    b.className='status-opt';
+    if((b.textContent==='No caminho'&&status==='green')||(b.textContent==='Em risco'&&status==='amber')||(b.textContent==='Atrasado'&&status==='red')) b.classList.add('sel-'+status);
+  });
+  renderPriorities();
+}
+
+function saveCheckin(teamId){
+  if(!state.weeklyCheckins[state.currentWeek]) state.weeklyCheckins[state.currentWeek]={};
+  if(!state.weeklyCheckins[state.currentWeek][teamId]) state.weeklyCheckins[state.currentWeek][teamId]={};
+  const ci=state.weeklyCheckins[state.currentWeek][teamId];
+  ci.progress=(document.getElementById('cp-'+teamId)||{}).value||'';
+  ci.blockers=(document.getElementById('cb2-'+teamId)||{}).value||'';
+  ci.next=(document.getElementById('cn-'+teamId)||{}).value||'';
+  state=saveData(state);
+  renderPriorities(); renderHistory();
+  showToast('Check-in do '+TEAMS.find(t=>t.id===teamId).name+' salvo!');
+}
+
+function saveAllCheckins(){
+  savePriorities();
+  TEAMS.forEach(t=>{ const el=document.getElementById('cc-'+t.id); if(el&&el.classList.contains('open')) saveCheckin(t.id); });
+  state=saveData(state);
+  showToast('Semana salva!');
+}
+
+function changeWeek(delta){
+  state.currentWeek=Math.max(1,Math.min(52,state.currentWeek+delta));
+  document.getElementById('week-label').textContent=weekLabel(state.currentWeek);
+  renderPriorities(); renderCheckinList(); renderHistory();
+}
+
+// ═══════════════════════════════════════════
+// ANUAL
+// ═══════════════════════════════════════════
+const ANNUAL = {
+  '2026':{theme:'Escalar receita e consolidar o motor executivo',revenue:'R$15M',rev:15,okrs:[
+    {n:'O1',color:'teal',title:'Atingir R$15M em comissão e construir o pipeline para 2027',tags:['Alta performance','Foco no cliente'],
+     krs:[
+       {t:'Fechar R$15M em comissão acumulada no ano',d:'Distribuição: R$2.5M Q1 → R$3.5M Q2 → R$4M Q3 → R$5M Q4.',w:'Até dez/26'},
+       {t:'Construir pipeline de R$35M para 2027',d:'2,3× a meta do ano em oportunidades qualificadas.',w:'Até dez/26'},
+       {t:'Ticket médio por contrato ≥ R$300k',d:'Patamar atual mantido e evoluído para pacotes premium.',w:'Trimestral'},
+       {t:'Taxa de renovação / upsell ≥ 55%',d:'Principal sinal de valor entregue e base da receita recorrente.',w:'Semestral'}
+     ],
+     init:[{t:'Lançar pacotes comerciais prioritários',hi:true},{t:'Criar media kit unificado dos canais'},{t:'Time comercial com meta individual por trimestre'}]
+    },
+    {n:'O2',color:'purple',title:'Consolidar a SMPL como motor executivo de ponta a ponta',tags:['Jeito SMPL','Alta performance'],
+     krs:[
+       {t:'Dream team onboardado: Aqueles Caras, Porta dos Fundos, Kings League, Julio Cocielo e Canal Foco',d:'5 canais com gestão integral ativa (comercial + conteúdo + financeiro + jurídico).',w:'Até dez/26',channels:['Aqueles Caras','Porta dos Fundos','Kings League','Julio Cocielo','Canal Foco']},
+       {t:'Documentar processos das 4 verticais com SLA definido',d:'Playbook por área, responsável nomeado e SLA acordado.',w:'Até jun/26'},
+       {t:'NPS dos criadores parceiros ≥ 75',d:'Pesquisa trimestral. Benchmark do setor: 50.',w:'Trimestral'}
+     ],
+     init:[{t:'Contratar time necessário para suportar o dream team',hi:true},{t:'Implantar Asana + HubSpot como stack operacional'},{t:'Template de onboarding de canal (ativo em 7 dias)'}]
+    },
+    {n:'O3',color:'blue',title:'Ser referência de conteúdo esportivo e TV-grade no YouTube BR',tags:['Fora da curva','Jeito SMPL'],
+     krs:[
+       {t:'Canais geridos somam 80M de inscritos agregados',d:'Canais maiores = maior poder de negociação com marcas.',w:'Até dez/26'},
+       {t:'Alcançar 800M de views nos canais geridos no ano',d:'~67M views/mês. Valida o argumento "internet = nova TV".',w:'Acumulado 2026'},
+       {t:'Produzir 3 produções de alto impacto com padrão TV',d:'Cada produção com distribuição ≥ 1M de views.',w:'Até dez/26'}
+     ],
+     init:[{t:'Mapa de talentos: 15 canais-alvo para captação'},{t:'Formato de produção TV-grade para YouTube'},{t:'Parceria com produtoras para co-produção'}]
+    }
+  ]},
+  '2027':{theme:'Dobrar a receita e construir marca nacional',revenue:'R$35M',rev:35,okrs:[
+    {n:'O1',color:'teal',title:'Dobrar a receita chegando a R$35M em comissão',tags:['Alta performance'],
+     krs:[{t:'R$35M em comissão no ano',d:'2,3× sobre 2026.',w:'Dez/27'},{t:'Ticket médio ≥ R$500k',d:'Evolução do patamar de R$300k de 2026.',w:'Dez/27'},{t:'40 canais sob gestão integral',d:'Foco em canais com ≥ 1M de inscritos.',w:'Dez/27'}],
+     init:[{t:'Time comercial de 6 pessoas'},{t:'Programa de indicação entre criadores'},{t:'Precificação por alcance + engajamento + CPM'}]
+    },
+    {n:'O2',color:'purple',title:'Estabelecer a SMPL como marca no mercado de mídia',tags:['Fora da curva','Jeito SMPL'],
+     krs:[{t:'SMPL em ≥ 20 veículos de mídia no ano',d:'PR ativa: cases de sucesso, dados de mercado.',w:'Acumulado 2027'},{t:'SMPL Summit com ≥ 300 participantes',d:'Evento próprio como plataforma de posicionamento.',w:'Nov/27'},{t:'Relatório anual com ≥ 5k downloads',d:'"Estado do YouTube Esportivo BR".',w:'Mar/27'}],
+     init:[{t:'Contratar head de marketing / comunicação'},{t:'Produzir relatório anual de mercado'}]
+    }
+  ]},
+  '2028':{theme:'Liderança de mercado e expansão de verticais',revenue:'R$75M',rev:75,okrs:[
+    {n:'O1',color:'teal',title:'Ser a maior gestora de canais de conteúdo do Brasil',tags:['Alta performance','Fora da curva'],
+     krs:[{t:'R$75M em comissão no ano',d:'Diversificação em novas categorias.',w:'Dez/28'},{t:'300M de inscritos agregados',d:'~60% do alcance da Globo.',w:'Dez/28'},{t:'70 canais em ≥ 3 categorias',d:'Expansão para entretenimento e lifestyle.',w:'Dez/28'}],
+     init:[{t:'Expansão para canais de entretenimento'},{t:'Plataforma de dados própria'},{t:'Avaliar aquisição de agências menores'}]
+    }
+  ]},
+  '2029':{theme:'Recorrência, internacionalização e preparo para 2030',revenue:'R$130M',rev:130,okrs:[
+    {n:'O1',color:'teal',title:'Cruzar R$130M e iniciar operação internacional',tags:['Alta performance','Fora da curva'],
+     krs:[{t:'R$130M em comissão no ano',d:'Receita recorrente ≥ 60%.',w:'Dez/29'},{t:'Operação em ≥ 1 país LATAM',d:'Argentina ou México como piloto.',w:'Dez/29'},{t:'Valuation ≥ R$650M',d:'Múltiplo de 5× receita.',w:'Dez/29'}],
+     init:[{t:'Captação série B ou C'},{t:'Expansão LATAM'},{t:'SaaS de gestão para criadores'}]
+    }
+  ]},
+  '2030':{theme:'A SMPL como a principal emissora digital do Brasil',revenue:'R$200M',rev:200,okrs:[
+    {n:'O1',color:'purple',title:'R$200M em comissão — a nova Globo digital',tags:['Fora da curva','Alta performance'],
+     krs:[{t:'R$200M em comissão no ano',d:'Visão realizada. ≥ 5 verticais de receita.',w:'Dez/30'},{t:'Alcance ≥ alcance mensal da Globo no Brasil',d:'~500M contatos/mês.',w:'Dez/30'},{t:'SMPL reconhecida como principal emissora digital em ≥ 3 pesquisas',d:'Top of mind em mídia digital.',w:'Dez/30'}],
+     init:[{t:'IPO ou exit estratégico'},{t:'Plataforma de distribuição própria'},{t:'Expansão global ≥ 5 países'}]
+    }
+  ]}
+};
+const REV_DATA=[{y:'2026',v:15},{y:'2027',v:35},{y:'2028',v:75},{y:'2029',v:130},{y:'2030',v:200}];
+let currentYear='2026';
+
+function renderRevLadder(){
+  document.getElementById('rev-ladder').innerHTML=REV_DATA.map(r=>{
+    const h=Math.round((r.v/200)*60)+10, active=r.y===currentYear;
+    return `<div class="rev-bar-wrap"><div class="rev-bar${active?' active':''}" style="height:${h}px"><span class="rev-val">${r.v>=1000?r.v/1000+'B':'R$'+r.v+'M'}</span></div><div class="rev-lbl">${r.y}</div></div>`;
+  }).join('');
+}
+
+function renderYearTabs(){
+  document.getElementById('year-tabs').innerHTML=Object.keys(ANNUAL).map(y=>`<button class="ytab${y===currentYear?' active':''}" onclick="switchYear('${y}',this)">${y}</button>`).join('');
+}
+
+function renderAnnualPanels(){
+  document.getElementById('year-panels').innerHTML=Object.entries(ANNUAL).map(([year,data])=>`
+    <div class="year-panel${year===currentYear?' active':''}" id="yp-${year}">
+      <div class="year-meta"><div class="year-theme">${data.theme}</div><div class="year-rev">Meta: ${data.revenue} em comissão</div></div>
+      ${data.okrs.map(okr=>renderAnnualOKR(year,okr)).join('')}
+    </div>`).join('');
+}
+
+function renderAnnualOKR(year,okr){
+  const csMap={teal:'background:var(--green-bg);color:var(--green-text)',purple:'background:var(--purple-bg);color:var(--purple-text)',blue:'background:var(--blue-bg);color:var(--blue-text)',coral:'background:var(--amber-bg);color:var(--amber-text)'};
+  const cs=csMap[okr.color]||csMap.purple;
+  const id=`aokr-${year}-${okr.n}`;
+  return `<div class="ann-okr" id="${id}">
+    <div class="ann-head" onclick="document.getElementById('${id}').classList.toggle('open')">
+      <div class="ann-num" style="${cs}">${okr.n}</div>
+      <div class="ann-info">
+        <div class="ann-title">${okr.title}</div>
+        <div class="ann-tags">${okr.tags.map(t=>`<span class="ann-tag c-gray">${t}</span>`).join('')}<span class="ann-tag c-blue">${okr.krs.length} KRs</span></div>
+      </div>
+      <span class="ann-chevron">▼</span>
+    </div>
+    <div class="ann-body">
+      ${okr.krs.map((kr,i)=>`
+      <div class="ann-kr">
+        <div class="ann-kr-head"><div class="ann-kr-dot"></div><div class="ann-kr-text">KR${i+1} — ${kr.t}</div></div>
+        <div class="ann-kr-detail">${kr.d}</div>
+        ${kr.channels?`<div class="channel-pills">${kr.channels.map(c=>`<span class="channel-pill">${c}</span>`).join('')}</div>`:''}
+        <div class="ann-kr-when">${kr.w}</div>
+      </div>`).join('')}
+      ${okr.init?`<div class="ann-init">
+        <div class="ann-init-label">Iniciativas principais</div>
+        ${okr.init.map(i=>`<div class="ann-init-item${i.hi?' hi':''}">${i.t}</div>`).join('')}
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+function switchYear(year,el){
+  currentYear=year;
+  document.querySelectorAll('.ytab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.year-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('yp-'+year).classList.add('active');
+  renderRevLadder();
+}
+
+// ═══════════════════════════════════════════
+// MODAL / EXPORT / TABS
+// ═══════════════════════════════════════════
+let krFieldCount=2;
+function openModal(){ document.getElementById('modal').classList.add('open'); krFieldCount=2; document.getElementById('m-krs').innerHTML=`<div class="kr-input-row"><span class="kr-num-lbl">KR1</span><input class="field-input" placeholder="Resultado mensurável..."></div><div class="kr-input-row"><span class="kr-num-lbl">KR2</span><input class="field-input" placeholder="Resultado mensurável..."></div>`; document.getElementById('m-title').value=''; }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function addKRField(){ if(krFieldCount>=4)return; krFieldCount++; const r=document.createElement('div'); r.className='kr-input-row'; r.innerHTML=`<span class="kr-num-lbl">KR${krFieldCount}</span><input class="field-input" placeholder="Resultado mensurável...">`; document.getElementById('m-krs').appendChild(r); }
+function saveOKR(){
+  const title=document.getElementById('m-title').value.trim(); if(!title){alert('Digite um título.');return;}
+  const texts=Array.from(document.querySelectorAll('#m-krs input')).map(i=>i.value.trim()).filter(Boolean); if(texts.length<2){alert('Adicione ≥ 2 KRs.');return;}
+  const cols=['green','blue','purple','amber','gray'];
+  const nid=Math.max(0,...state.objectives.map(o=>o.id))+1;
+  state.objectives.push({id:nid,title,icon:document.getElementById('m-icon').value,owner:document.getElementById('m-team').value,color:cols[nid%cols.length],krs:texts.map((t,i)=>({id:nid*100+i,text:t,current:0,target:100,unit:'%'}))});
+  state=saveData(state); closeModal(); renderAll(); showToast('Objetivo criado!');
+}
+function exportCSV(){
+  let csv='Objetivo,Time,KR,Atual,Meta,Unidade,Progresso\n';
+  state.objectives.forEach(obj=>obj.krs.forEach(kr=>{csv+=`"${obj.title}","${obj.owner}","${kr.text}",${kr.current},${kr.target},"${kr.unit}",${pct(kr)}%\n`;}));
+  const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='smpl-okrs-q2-2026.csv'; a.click(); URL.revokeObjectURL(url);
+}
+function switchTab(name,el){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='trimestral') renderQuarterly();
+  if(name==='semanal'){ renderPriorities(); renderPriorities(); renderCheckinList(); renderHistory(); }
+  if(name==='anual'){ renderRevLadder(); renderYearTabs(); renderAnnualPanels(); }
+}
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+// INIT
+function renderAll(){ renderMetrics(); renderObjectives(); }
+renderAll();
+renderQuarterly();
+document.getElementById('week-label').textContent=weekLabel(state.currentWeek);
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
+</body>
+</html>
